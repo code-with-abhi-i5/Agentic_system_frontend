@@ -31,12 +31,12 @@ export default function HistoryView({ onLoadWorkflowDataset }) {
             width: "36px",
             height: "36px",
             borderRadius: "10px",
-            background: "rgba(99, 102, 241, 0.15)",
-            border: "1px solid rgba(99, 102, 241, 0.3)",
+            background: "rgba(255, 255, 255, 0.08)",
+            border: "1px solid rgba(255, 255, 255, 0.2)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "var(--indigo-light)"
+            color: "#fff"
           }}>
             <History style={{ width: "18px", height: "18px" }} />
           </div>
@@ -71,12 +71,12 @@ export default function HistoryView({ onLoadWorkflowDataset }) {
               width: "48px",
               height: "48px",
               borderRadius: "14px",
-              background: "rgba(99, 102, 241, 0.1)",
+              background: "rgba(255, 255, 255, 0.05)",
               border: "1px solid rgba(99, 102, 241, 0.2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--indigo-light)"
+              color: "#fff"
             }}>
               <Sparkles style={{ width: "24px", height: "24px" }} />
             </div>
@@ -144,7 +144,7 @@ export default function HistoryView({ onLoadWorkflowDataset }) {
                   {/* Metrics row */}
                   <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginTop: "0.2rem", fontSize: "0.75rem", color: "var(--text-muted)" }}>
                     <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                      <Database style={{ width: "13px", height: "13px", color: "var(--indigo-light)" }} />
+                      <Database style={{ width: "13px", height: "13px", color: "#fff" }} />
                       <span><strong>{recordsCount}</strong> Records</span>
                     </span>
                     <span>•</span>
@@ -164,7 +164,7 @@ export default function HistoryView({ onLoadWorkflowDataset }) {
                 <div>
                   <button
                     onClick={() => onLoadWorkflowDataset(task)}
-                    className="btn-primary"
+                    className="matte-btn-white"
                     style={{ padding: "0.55rem 1rem", fontSize: "0.8rem" }}
                   >
                     <span>Explore Dataset</span>

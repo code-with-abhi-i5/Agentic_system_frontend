@@ -120,7 +120,7 @@ export default function AIChatPanel({ isOpen, onClose, datasetId, datasetTitle, 
               height: "40px",
               borderRadius: "12px",
               background: "linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(99, 102, 241, 0.2))",
-              border: "1px solid rgba(6, 182, 212, 0.4)",
+              border: "1px solid rgba(255, 255, 255, 0.1)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -150,8 +150,8 @@ export default function AIChatPanel({ isOpen, onClose, datasetId, datasetTitle, 
                 width: "56px",
                 height: "56px",
                 borderRadius: "16px",
-                background: "linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(99, 102, 241, 0.15))",
-                border: "1px solid rgba(6, 182, 212, 0.3)",
+                background: "rgba(255, 255, 255, 0.05)",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -225,7 +225,7 @@ export default function AIChatPanel({ isOpen, onClose, datasetId, datasetTitle, 
                 onClick={() => sendMessage(suggestion)}
                 className="suggestion-chip"
               >
-                <Sparkles style={{ width: "12px", height: "12px", color: "var(--indigo-light)", flexShrink: 0 }} />
+                <Sparkles style={{ width: "12px", height: "12px", color: "#fff", flexShrink: 0 }} />
                 <span>{suggestion}</span>
                 <ArrowRight style={{ width: "11px", height: "11px", color: "var(--text-subtle)", flexShrink: 0 }} />
               </button>

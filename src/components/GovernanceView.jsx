@@ -100,7 +100,7 @@ export default function GovernanceView() {
                 <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#fff" }}>
                   Max Request Concurrency: {rateLimit} req/sec
                 </span>
-                <span style={{ fontSize: "0.72rem", color: "var(--indigo-light)" }}>Safe Zone</span>
+                <span style={{ fontSize: "0.72rem", color: "#fff" }}>Safe Zone</span>
               </div>
               <input
                 type="range"
@@ -108,7 +108,7 @@ export default function GovernanceView() {
                 max={20}
                 value={rateLimit}
                 onChange={(e) => setRateLimit(Number(e.target.value))}
-                style={{ width: "100%", accentColor: "var(--indigo-primary)" }}
+                style={{ width: "100%", accentColor: "#fff" }}
               />
             </div>
           </div>

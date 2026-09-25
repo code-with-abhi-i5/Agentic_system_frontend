@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { Routes, Route, Navigate, useLocation, useNavigate, useParams } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import TopHeader from "./components/TopHeader";
 import OverviewStats from "./components/OverviewStats";
@@ -13,23 +14,29 @@ import SchemaReviewModal from "./components/SchemaReviewModal";
 import AIChatPanel from "./components/AIChatPanel";
 import DataLineageFlow from "./components/DataLineageFlow";
 import ResearchReportModal from "./components/ResearchReportModal";
-import AuthModal from "./components/AuthModal";
-import LandingPage from "./components/LandingPage";
-import AuthPage from "./components/AuthPage";
 import { useAuth } from "./context/AuthContext";
-import { getBackendDatasets, getBackendTasks, launchBackendTask, confirmSchema } from "./services/api";
+import { getBackendDatasets, getBackendTasks, launchBackendTask, confirmSchema, cancelBackendTask } from "./services/api";
 import confetti from "canvas-confetti";
 
 export default function App() {
   const { user, isAuthenticated } = useAuth();
-  const [currentView, setCurrentView] = useState("landing"); // 'landing' | 'auth' | 'dashboard'
-  const [authMode, setAuthMode] = useState("login"); // 'login' | 'signup'
-  const [activeTab, setActiveTab] = useState("mission-control");
+  
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Derive activeTab from URL path
+  const activeTab = location.pathname === "/" ? "mission-control" : location.pathname.substring(1);
+  
+  const setActiveTab = (tab) => {
+    navigate(`/${tab}`);
+  };
   const [dataset, setDataset] = useState([]);
+  const [allDatasets, setAllDatasets] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [logs, setLogs] = useState([]);
   const [currentStep, setCurrentStep] = useState(1);
   const [isRunning, setIsRunning] = useState(false);
+  const [currentTaskId, setCurrentTaskId] = useState(null);
   const [inspectingRecord, setInspectingRecord] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [isBackendConnected, setIsBackendConnected] = useState(false);
@@ -55,7 +62,8 @@ export default function App() {
       const backendDatasets = await getBackendDatasets();
       if (backendDatasets && backendDatasets.length > 0) {
         setIsBackendConnected(true);
-        // Load the most recent dataset's records
+        setAllDatasets(backendDatasets);
+        // Load the most recent dataset's records for main table
         const latest = backendDatasets[0];
         setDataset(latest?.records || []);
         setCurrentDatasetId(latest?._id || null);
@@ -85,6 +93,7 @@ export default function App() {
   // Autonomous Extraction calling real Backend SSE Task API
   const handleLaunchExtraction = async ({ prompt, maxRecords, strictDeduplication }) => {
     setIsRunning(true);
+    setCurrentTaskId(null);
     setCurrentStep(1);
     setLineageData(null);
 
@@ -101,6 +110,9 @@ export default function App() {
     await launchBackendTask(
       { prompt, maxRecords, strictDeduplication },
       {
+        onTaskCreated: (taskId) => {
+          setCurrentTaskId(taskId);
+        },
         onStatus: (status) => {
           if (status.includes("Planning")) setCurrentStep(1);
           else if (status.includes("Discovering") || status.includes("Tavily")) setCurrentStep(2);
@@ -171,6 +183,22 @@ export default function App() {
     );
   };
 
+  const handleCancelExtraction = async () => {
+    if (!currentTaskId) return;
+    try {
+      await cancelBackendTask(currentTaskId);
+      setIsRunning(false);
+      setLogs(prev => [...prev, {
+        time: new Date().toTimeString().split(" ")[0],
+        agent: "System",
+        type: "error",
+        msg: "Task execution cancelled by user."
+      }]);
+    } catch (e) {
+      console.error("Cancel task failed", e);
+    }
+  };
+
   // Feature 1: Handle Schema Confirmation
   const handleSchemaConfirm = async ({ taskId, approvedSchema, fieldMappings, excludedFields }) => {
     try {
@@ -238,30 +266,9 @@ export default function App() {
     setActiveTab("datasets");
   };
 
-  if (currentView === "landing") {
-    return (
-      <LandingPage
-        onEnterApp={() => setCurrentView("dashboard")}
-        onOpenAuth={(mode = "login") => {
-          setAuthMode(mode);
-          setCurrentView("auth");
-        }}
-      />
-    );
-  }
-
-  if (currentView === "auth") {
-    return (
-      <AuthPage
-        initialMode={authMode}
-        onBackToHome={() => setCurrentView("landing")}
-        onSuccessLogin={() => setCurrentView("dashboard")}
-      />
-    );
-  }
 
   return (
-    <div className="app-container">
+    <div className="app-container matte-bg" style={{ minHeight: "100vh", display: "flex", color: "#e5e5e5" }}>
       {/* 1. Left Navigation Sidebar */}
       <Sidebar
         activeTab={activeTab}
@@ -284,44 +291,34 @@ export default function App() {
 
         {/* Content Area */}
         <main className="content-wrapper">
-          {/* TAB 1: MISSION CONTROL (Prompt Studio + Live Swarm Tracker + Data Table) */}
-          {activeTab === "mission-control" && (
-            <>
-              {/* Executive Stats Banner with Live Dynamic Values */}
-              <OverviewStats dataset={dataset} tasks={tasks} isRunning={isRunning} />
+          <Routes>
+            <Route path="/" element={<Navigate to="/mission-control" replace />} />
+            
+            {/* TAB 1: MISSION CONTROL (Prompt Studio + Live Swarm Tracker + Data Table) */}
+            <Route path="/mission-control" element={
+              <>
+              {/* Grid Layout Top Section */}
+              <div className="matte-grid-layout">
+                {/* Column 1: Prompt Studio */}
+                <PromptStudio
+                  onLaunchExtraction={handleLaunchExtraction}
+                  onCancelExtraction={handleCancelExtraction}
+                  isRunning={isRunning}
+                />
 
-              {/* Prompt Studio Input Box */}
-              <PromptStudio
-                onLaunchExtraction={handleLaunchExtraction}
-                isRunning={isRunning}
-              />
+                {/* Column 2: Stats */}
+                <OverviewStats dataset={dataset} tasks={tasks} isRunning={isRunning} />
 
-              {/* Live Multi-Agent Swarm Tracker Pipeline & Terminal */}
-              <LiveSwarmTracker
-                currentStep={currentStep}
-                logs={logs}
-                isRunning={isRunning}
-              />
+                {/* Column 3: Live Swarm Tracker */}
+                <LiveSwarmTracker
+                  currentStep={currentStep}
+                  logs={logs}
+                  isRunning={isRunning}
+                />
+              </div>
 
-              {/* Feature 3: Data Lineage Visualizer */}
-              <DataLineageFlow
-                lineage={lineageData}
-                isVisible={!!lineageData}
-              />
-
-              {/* Centralized Interactive Data Table */}
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                  <div>
-                    <h3 style={{ fontSize: "1.1rem", fontWeight: "700", color: "#fff" }}>
-                      Extracted Structured Intelligence
-                    </h3>
-                    <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                      Real-time source-backed dataset verified by autonomous quality guardrails
-                    </p>
-                  </div>
-                </div>
-
+              {/* Bottom Section: Data Table */}
+              <div style={{ marginTop: "1rem", width: "100%" }}>
                 <DataTable
                   dataset={dataset}
                   onInspectSource={(record) => setInspectingRecord(record)}
@@ -330,12 +327,12 @@ export default function App() {
                   onReportClick={() => setShowReportModal(true)}
                 />
               </div>
-            </>
-          )}
+              </>
+            } />
 
-          {/* TAB 2: EXECUTIVE OVERVIEW */}
-          {activeTab === "overview" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
+            {/* TAB 2: EXECUTIVE OVERVIEW */}
+            <Route path="/overview" element={
+              <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               <OverviewStats dataset={dataset} tasks={tasks} isRunning={isRunning} />
 
               <div style={{
@@ -343,106 +340,129 @@ export default function App() {
                 gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
                 gap: "1.5rem"
               }}>
-                <div className="glass-panel">
-                  <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "0.5rem" }}>
+                <div className="matte-card">
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
                     Autonomous Scraping vs Manual Scrapers
                   </h3>
-                  <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "1.25rem" }}>
-                    How Kortex AI eliminates workflow maintenance overhead
+                  <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
+                    How Cerkit AI eliminates workflow maintenance overhead
                   </p>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", fontSize: "0.82rem" }}>
-                    <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(16, 185, 129, 0.08)", border: "1px solid rgba(16, 185, 129, 0.2)", color: "var(--emerald-primary)" }}>
+                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
                       ✓ <strong>Zero-Maintenance Scrapers:</strong> Agent adapts to DOM changes on-the-fly.
                     </div>
-                    <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(6, 182, 212, 0.08)", border: "1px solid rgba(6, 182, 212, 0.2)", color: "var(--cyan-primary)" }}>
+                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
                       ✓ <strong>Source Provenance:</strong> Every record is linked with full URL citations.
                     </div>
-                    <div style={{ padding: "0.75rem", borderRadius: "10px", background: "rgba(99, 102, 241, 0.08)", border: "1px solid rgba(99, 102, 241, 0.2)", color: "var(--indigo-light)" }}>
+                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
                       ✓ <strong>Multi-Model Balancing:</strong> Heavy tools use Groq / Tavily, summarization uses Qwen / Llama.
                     </div>
                   </div>
                 </div>
-
-                <div className="glass-panel">
-                  <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "0.5rem" }}>
+                <div className="matte-card">
+                  <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
                     Data Cleanliness Guardrails
                   </h3>
-                  <p style={{ fontSize: "0.78rem", color: "var(--text-muted)", marginBottom: "1.25rem" }}>
+                  <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
                     Active validation metrics applied to every extraction run
                   </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: "0.3rem" }}>
-                        <span style={{ color: "#cbd5e1" }}>Schema Conformance</span>
-                        <span style={{ color: "var(--emerald-primary)", fontWeight: "700" }}>100%</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                        <span style={{ color: "#aaa" }}>Schema Conformance</span>
+                        <span style={{ color: "#fff", fontWeight: "600" }}>100%</span>
                       </div>
-                      <div style={{ height: "6px", background: "var(--bg-tertiary)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "100%", height: "100%", background: "var(--emerald-primary)" }}></div>
+                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div style={{ width: "100%", height: "100%", background: "#fff" }}></div>
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: "0.3rem" }}>
-                        <span style={{ color: "#cbd5e1" }}>Duplicate Elimination Rate</span>
-                        <span style={{ color: "var(--cyan-primary)", fontWeight: "700" }}>98.5%</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                        <span style={{ color: "#aaa" }}>Duplicate Elimination Rate</span>
+                        <span style={{ color: "#fff", fontWeight: "600" }}>98.5%</span>
                       </div>
-                      <div style={{ height: "6px", background: "var(--bg-tertiary)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "98.5%", height: "100%", background: "var(--cyan-primary)" }}></div>
+                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div style={{ width: "98.5%", height: "100%", background: "#fff" }}></div>
                       </div>
                     </div>
 
                     <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", marginBottom: "0.3rem" }}>
-                        <span style={{ color: "#cbd5e1" }}>Source Verification Completeness</span>
-                        <span style={{ color: "var(--indigo-light)", fontWeight: "700" }}>100.0%</span>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                        <span style={{ color: "#aaa" }}>Source Verification Completeness</span>
+                        <span style={{ color: "#fff", fontWeight: "600" }}>100.0%</span>
                       </div>
-                      <div style={{ height: "6px", background: "var(--bg-tertiary)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "100%", height: "100%", background: "var(--indigo-primary)" }}></div>
+                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
+                        <div style={{ width: "100%", height: "100%", background: "#fff" }}></div>
                       </div>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-
-          {/* TAB 3: DATASETS EXPLORER */}
-          {activeTab === "datasets" && (
-            <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
-              <div className="glass-panel" style={{ padding: "1.5rem" }}>
-                <h2 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#fff" }}>
-                  Centralized Dataset Repository
-                </h2>
-                <p style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
-                  Search, filter, inspect provenance, and export your collected business intelligence
-                </p>
               </div>
+            } />
 
-              {/* Lineage for current dataset */}
-              <DataLineageFlow
-                lineage={lineageData}
-                isVisible={!!lineageData}
-              />
+            {/* TAB 3: DATASETS EXPLORER */}
+            <Route path="/datasets" element={
+              <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+                <div className="matte-card">
+                  <h2 style={{ fontSize: "1.15rem", fontWeight: "600", color: "#fff", marginBottom: "0.25rem" }}>
+                    Centralized Dataset Repository
+                  </h2>
+                  <p style={{ fontSize: "0.85rem", color: "#888" }}>
+                    Search, filter, inspect provenance, and export your collected business intelligence
+                  </p>
+                </div>
 
-              <DataTable
-                dataset={dataset}
-                onInspectSource={(record) => setInspectingRecord(record)}
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: "1rem" }}>
+                  {allDatasets.map((ds) => (
+                    <div 
+                      key={ds._id} 
+                      className="matte-card" 
+                      style={{ cursor: "pointer", transition: "all 0.2s" }}
+                      onClick={() => navigate(`/datasets/${ds._id}`)}
+                    >
+                      <h3 style={{ fontSize: "1rem", color: "#fff", fontWeight: "600", marginBottom: "0.5rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {ds.title || ds.prompt || "Untitled Dataset"}
+                      </h3>
+                      <div style={{ display: "flex", justifyContent: "space-between", color: "#888", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                        <span>{new Date(ds.createdAt).toLocaleDateString()}</span>
+                        <span style={{ color: "var(--emerald-primary)" }}>{ds.records?.length || 0} Records</span>
+                      </div>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <button className="matte-btn-white" style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}>View Data</button>
+                      </div>
+                    </div>
+                  ))}
+                  {allDatasets.length === 0 && (
+                     <div style={{ color: "#666", padding: "2rem", textAlign: "center", width: "100%", gridColumn: "1 / -1" }}>
+                       No datasets generated yet. Run an extraction in Mission Control to start!
+                     </div>
+                  )}
+                </div>
+              </div>
+            } />
+            
+            <Route path="/datasets/:id" element={
+              <DatasetViewerRoute 
+                lineageData={lineageData}
+                onInspectSource={setInspectingRecord}
                 onExportClick={() => setIsExportModalOpen(true)}
                 onChatClick={() => setShowAIChat(true)}
                 onReportClick={() => setShowReportModal(true)}
               />
-            </div>
-          )}
+            } />
 
-          {/* TAB 4: WORKFLOW HISTORY */}
-          {activeTab === "history" && (
-            <HistoryView onLoadWorkflowDataset={handleLoadWorkflowDataset} />
-          )}
+            {/* TAB 4: WORKFLOW HISTORY */}
+            <Route path="/history" element={
+              <HistoryView onLoadWorkflowDataset={handleLoadWorkflowDataset} />
+            } />
 
-          {/* TAB 5: SOURCE GOVERNANCE */}
-          {activeTab === "governance" && (
-            <GovernanceView />
-          )}
+            {/* TAB 5: SOURCE GOVERNANCE */}
+            <Route path="/governance" element={
+              <GovernanceView />
+            } />
+          </Routes>
         </main>
       </div>
 
@@ -491,8 +511,30 @@ export default function App() {
         datasetTitle={currentDatasetTitle}
       />
 
-      {/* Operator Authentication Modal */}
-      <AuthModal />
+    </div>
+  );
+}
+function DatasetViewerRoute({ lineageData, onInspectSource, onExportClick, onChatClick, onReportClick }) {
+  const { id } = useParams();
+  const navigate = useNavigate();
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+      <button 
+        onClick={() => navigate("/datasets")} 
+        className="matte-nav-inactive" 
+        style={{ width: "fit-content", padding: "0.5rem 1rem", border: "1px solid rgba(255,255,255,0.1)", borderRadius: "8px", cursor: "pointer", background: "transparent", color: "#fff" }}
+      >
+        ← Back to Repositories
+      </button>
+      <DataLineageFlow lineage={lineageData} isVisible={!!lineageData} />
+      <DataTable
+        datasetId={id}
+        onInspectSource={onInspectSource}
+        onExportClick={onExportClick}
+        onChatClick={onChatClick}
+        onReportClick={onReportClick}
+      />
     </div>
   );
 }

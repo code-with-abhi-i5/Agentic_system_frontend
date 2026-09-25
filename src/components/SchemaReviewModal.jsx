@@ -21,7 +21,7 @@ import {
 const TYPE_OPTIONS = [
   { value: "string", label: "Text", icon: Type, color: "var(--text-muted)" },
   { value: "number", label: "Number", icon: Hash, color: "var(--cyan-primary)" },
-  { value: "url", label: "URL", icon: Link, color: "var(--indigo-light)" },
+  { value: "url", label: "URL", icon: Link, color: "#fff" },
   { value: "email", label: "Email", icon: Mail, color: "var(--purple-primary)" },
   { value: "date", label: "Date", icon: Calendar, color: "var(--amber-primary)" },
   { value: "boolean", label: "Boolean", icon: ToggleLeft, color: "var(--emerald-primary)" },
@@ -134,12 +134,12 @@ export default function SchemaReviewModal({
               width: "44px",
               height: "44px",
               borderRadius: "14px",
-              background: "linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(168, 85, 247, 0.2))",
-              border: "1px solid rgba(99, 102, 241, 0.4)",
+              background: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--indigo-light)",
+              color: "#fff",
             }}>
               <Shield style={{ width: "22px", height: "22px" }} />
             </div>
@@ -201,12 +201,12 @@ export default function SchemaReviewModal({
               onClick={() => setPreviewTab(tab.id)}
               style={{
                 padding: "0.65rem 1.1rem",
-                fontSize: "0.82rem",
+                fontSize: "0.85rem",
                 fontWeight: "700",
-                color: previewTab === tab.id ? "var(--indigo-light)" : "var(--text-muted)",
+                color: previewTab === tab.id ? "#fff" : "var(--text-muted)",
                 background: "transparent",
                 border: "none",
-                borderBottom: previewTab === tab.id ? "2px solid var(--indigo-primary)" : "2px solid transparent",
+                borderBottom: previewTab === tab.id ? "2px solid #fff" : "2px solid transparent",
                 cursor: "pointer",
                 transition: "all 0.15s ease",
               }}
@@ -261,7 +261,7 @@ export default function SchemaReviewModal({
                           autoFocus
                           style={{
                             background: "rgba(7, 9, 14, 0.8)",
-                            border: "1px solid var(--indigo-primary)",
+                            border: "1px solid #fff",
                             borderRadius: "8px",
                             padding: "0.35rem 0.6rem",
                             fontSize: "0.82rem",
@@ -449,13 +449,13 @@ export default function SchemaReviewModal({
           </div>
 
           <div style={{ display: "flex", gap: "0.75rem" }}>
-            <button onClick={onClose} className="btn-secondary" style={{ padding: "0.6rem 1.2rem", fontSize: "0.84rem" }}>
+            <button onClick={onClose} className="matte-nav-inactive" style={{ padding: "0.6rem 1.2rem", fontSize: "0.84rem", border: "1px solid rgba(255,255,255,0.1)", background: "transparent", borderRadius: "8px", cursor: "pointer", color: "#fff" }}>
               Cancel
             </button>
             <button
               onClick={handleConfirm}
               disabled={isSubmitting || includedFields.length === 0}
-              className="btn-primary"
+              className="matte-btn-white"
               style={{ padding: "0.6rem 1.4rem", fontSize: "0.84rem" }}
             >
               {isSubmitting ? (

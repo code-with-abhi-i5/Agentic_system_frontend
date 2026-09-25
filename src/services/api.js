@@ -119,6 +119,32 @@ export const getBackendDatasets = async () => {
 };
 
 /**
+ * Fetch specific dataset records with server-side pagination
+ */
+export const getDatasetRecords = async (id, { page = 1, limit = 20, search = "", category = "ALL", sortField = "confidence", sortOrder = "desc" } = {}) => {
+  try {
+    const queryParams = new URLSearchParams({
+      page,
+      limit,
+      search,
+      category,
+      sortField,
+      sortOrder
+    });
+    
+    const res = await fetch(`${API_BASE}/datasets/${id}/records?${queryParams.toString()}`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    return data?.data || { records: [], total: 0, page: 1, totalPages: 1 };
+  } catch (error) {
+    console.warn("Backend getDatasetRecords fetch fallback:", error.message);
+    return { records: [], total: 0, page: 1, totalPages: 1 };
+  }
+};
+
+/**
  * Fetch historical workflow tasks from Backend
  */
 export const getBackendTasks = async () => {
@@ -140,7 +166,7 @@ export const getBackendTasks = async () => {
  */
 export const launchBackendTask = async (
   { prompt, maxRecords = 50, strictDeduplication = true },
-  { onStatus, onLog, onProgress, onDataset, onDone, onError, onSchemaReview, onLineageUpdate, onAwaitingConfirmation }
+  { onStatus, onLog, onProgress, onDataset, onDone, onError, onSchemaReview, onLineageUpdate, onAwaitingConfirmation, onTaskCreated }
 ) => {
   try {
     const response = await fetch(`${API_BASE}/tasks/create`, {
@@ -174,6 +200,7 @@ export const launchBackendTask = async (
           try {
             const data = JSON.parse(jsonStr);
 
+            if (data.type === "task_created" && onTaskCreated) onTaskCreated(data.task.taskId);
             if (data.type === "status" && onStatus) onStatus(data.status);
             if (data.type === "log" && onLog) onLog(data.log);
             if (data.type === "progress" && onProgress) onProgress(data.progress);
@@ -210,6 +237,23 @@ export const confirmSchema = async (taskId, schemaData) => {
     return data;
   } catch (error) {
     console.error("Confirm schema error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Cancel Running Task
+ */
+export const cancelBackendTask = async (taskId) => {
+  try {
+    const res = await fetch(`${API_BASE}/tasks/${taskId}/cancel`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Cancel task error:", error);
     throw error;
   }
 };

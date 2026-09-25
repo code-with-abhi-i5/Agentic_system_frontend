@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
+import { getDatasetRecords } from "../services/api";
 import { 
   Search, 
   Download, 
@@ -19,7 +20,7 @@ import {
   FileText,
 } from "lucide-react";
 
-export default function DataTable({ dataset = [], onInspectSource, onExportClick, onChatClick, onReportClick }) {
+export default function DataTable({ dataset = [], datasetId, onInspectSource, onExportClick, onChatClick, onReportClick }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [sortField, setSortField] = useState("confidence");
@@ -27,15 +28,50 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 6;
 
+  // Server-side State
+  const [serverRecords, setServerRecords] = useState([]);
+  const [serverTotal, setServerTotal] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Fetch from server if datasetId is provided
+  useEffect(() => {
+    if (!datasetId) return;
+    const fetchRecords = async () => {
+      setIsLoading(true);
+      try {
+        const data = await getDatasetRecords(datasetId, {
+          page: currentPage,
+          limit: rowsPerPage,
+          search: searchQuery,
+          category: selectedCategory,
+          sortField,
+          sortOrder,
+        });
+        setServerRecords(data.records || []);
+        setServerTotal(data.pagination?.total || data.total || 0);
+      } catch (e) {
+        console.error("Failed to fetch records", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchRecords();
+  }, [datasetId, currentPage, searchQuery, selectedCategory, sortField, sortOrder, rowsPerPage]);
+
+  const activeDataset = datasetId ? serverRecords : dataset;
+
+
   // Extract distinct categories for filter
   const categories = useMemo(() => {
-    const set = new Set(dataset.map((d) => d.category).filter(Boolean));
+    const sourceData = datasetId ? serverRecords : dataset;
+    const set = new Set(sourceData.map((d) => d.category).filter(Boolean));
     return ["ALL", ...Array.from(set)];
-  }, [dataset]);
+  }, [dataset, datasetId, serverRecords]);
 
   // Filtering and Searching
   const filteredData = useMemo(() => {
-    return dataset.filter((item) => {
+    if (datasetId) return activeDataset;
+    return activeDataset.filter((item) => {
       const company = item.company || item.name || "";
       const founder = item.founder || item.author || "";
       const location = item.location || "";
@@ -52,10 +88,11 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
 
       return matchesSearch && matchesCategory;
     });
-  }, [dataset, searchQuery, selectedCategory]);
+  }, [activeDataset, searchQuery, selectedCategory, datasetId]);
 
   // Sorting
   const sortedData = useMemo(() => {
+    if (datasetId) return filteredData;
     return [...filteredData].sort((a, b) => {
       let valA = a[sortField];
       let valB = b[sortField];
@@ -67,14 +104,16 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
       if (valA > valB) return sortOrder === "asc" ? 1 : -1;
       return 0;
     });
-  }, [filteredData, sortField, sortOrder]);
+  }, [filteredData, sortField, sortOrder, datasetId]);
 
   // Pagination
-  const totalPages = Math.ceil(sortedData.length / rowsPerPage) || 1;
+  const totalRecords = datasetId ? serverTotal : sortedData.length;
+  const totalPages = Math.ceil(totalRecords / rowsPerPage) || 1;
   const paginatedData = useMemo(() => {
+    if (datasetId) return sortedData;
     const start = (currentPage - 1) * rowsPerPage;
     return sortedData.slice(start, start + rowsPerPage);
-  }, [sortedData, currentPage]);
+  }, [sortedData, currentPage, datasetId]);
 
   const handleSort = (field) => {
     if (sortField === field) {
@@ -85,7 +124,7 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
     }
   };
 
-  if (!dataset || dataset.length === 0) {
+  if ((!activeDataset || activeDataset.length === 0) && !isLoading && !datasetId) {
     return (
       <div className="data-table-wrapper" style={{ padding: "4rem 2rem", textAlign: "center" }}>
         <div style={{
@@ -122,7 +161,40 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
   }
 
   return (
-    <div className="data-table-wrapper">
+    <div className="matte-card" style={{ marginTop: "1rem", height: "100%" }}>
+      {/* Table Header matching Assets card */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "1.5rem", flexWrap: "wrap", gap: "1rem" }}>
+        
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+          <h3 style={{ fontSize: "1.2rem", color: "#fff", fontWeight: "600" }}>Extracted Data</h3>
+          
+          <div style={{ display: "flex", gap: "1rem", fontSize: "0.8rem", color: "#888" }}>
+            <span style={{ color: "#fff", borderBottom: "1px solid #fff", paddingBottom: "0.2rem" }}>All Records</span>
+            <span>Verified</span>
+            <span>Pending</span>
+            <span>Failed</span>
+          </div>
+        </div>
+        
+        {/* Time Pills like '1D 2W 1M' in the image */}
+        <div style={{ display: "flex", gap: "0.5rem" }}>
+          {["1D", "2W", "1M"].map((t, idx) => (
+            <button key={t} style={{
+              background: idx === 0 ? "rgba(255,255,255,0.08)" : "transparent",
+              border: "1px solid transparent",
+              borderRadius: "8px",
+              padding: "0.35rem 0.8rem",
+              fontSize: "0.75rem",
+              color: idx === 0 ? "#fff" : "#888",
+              cursor: "pointer"
+            }}>
+              {t}
+            </button>
+          ))}
+        </div>
+      </div>
+      
+      <div className="data-table-wrapper" style={{ border: "none", background: "transparent", padding: 0 }}>
       {/* Table Toolbar */}
       <div className="table-toolbar">
         {/* Left: Search & Filter */}
@@ -176,13 +248,13 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
         {/* Right: Quick Table Stats & Export */}
         <div style={{ display: "flex", alignItems: "center", gap: "0.65rem" }}>
           <span style={{ fontSize: "0.82rem", color: "var(--text-muted)" }}>
-            Showing <strong>{paginatedData.length}</strong> of <strong>{filteredData.length}</strong> items
+            Showing <strong>{paginatedData.length}</strong> of <strong>{totalRecords}</strong> items
           </span>
           {onChatClick && (
             <button
               onClick={onChatClick}
-              className="btn-secondary"
-              style={{ padding: "0.55rem 0.95rem", fontSize: "0.82rem" }}
+              className="matte-nav-inactive"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.55rem 0.95rem", fontSize: "0.82rem"  }}
               title="Chat with this dataset using AI"
             >
               <MessageSquare style={{ width: "15px", height: "15px", color: "var(--cyan-primary)" }} />
@@ -192,8 +264,8 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
           {onReportClick && (
             <button
               onClick={onReportClick}
-              className="btn-secondary"
-              style={{ padding: "0.55rem 0.95rem", fontSize: "0.82rem" }}
+              className="matte-nav-inactive"
+              style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.55rem 0.95rem", fontSize: "0.82rem"  }}
               title="Generate AI research report"
             >
               <FileText style={{ width: "15px", height: "15px", color: "var(--amber-primary)" }} />
@@ -202,7 +274,7 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
           )}
           <button
             onClick={onExportClick}
-            className="btn-primary"
+            className="matte-btn-white"
             style={{ padding: "0.55rem 1.1rem", fontSize: "0.82rem" }}
           >
             <Download style={{ width: "15px", height: "15px" }} />
@@ -265,7 +337,7 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
                         <span style={{ fontWeight: "700", color: "#ffffff", fontSize: "0.95rem", letterSpacing: "-0.01em" }}>
                           {row.company || row.name || "N/A"}
                         </span>
-                        <span style={{ fontSize: "0.78rem", color: "var(--cyan-primary)", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
+                        <span style={{ fontSize: "0.78rem", color: "#888", fontWeight: "500", display: "inline-flex", alignItems: "center", gap: "0.3rem" }}>
                           <ExternalLink style={{ width: "11px", height: "11px" }} />
                           {row.sourceDomain || "verified source"}
                         </span>
@@ -280,7 +352,7 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
                         </span>
                         {hasRealEmail ? (
                           <div style={{ display: "flex", alignItems: "center", gap: "0.35rem" }}>
-                            <Mail style={{ width: "12px", height: "12px", color: "var(--indigo-light)" }} />
+                            <Mail style={{ width: "12px", height: "12px", color: "#888" }} />
                             <span style={{ fontSize: "0.78rem", color: "var(--text-muted)", fontFamily: "var(--font-mono)" }}>
                               {row.email}
                             </span>
@@ -295,29 +367,29 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
 
                     {/* Location */}
                     <td>
-                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.86rem", color: "#cbd5e1" }}>
-                        <MapPin style={{ width: "14px", height: "14px", color: "var(--cyan-primary)", shrink: 0 }} />
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.86rem", color: "#888" }}>
+                        <MapPin style={{ width: "14px", height: "14px", color: "#888", shrink: 0 }} />
                         <span>{row.location || "Global"}</span>
                       </div>
                     </td>
 
                     {/* Funding */}
                     <td>
-                      <span className="badge badge-indigo" title={row.funding || "Private"}>
+                      <span style={{ background: "rgba(255,255,255,0.05)", padding: "0.25rem 0.5rem", borderRadius: "4px", fontSize: "0.75rem", color: "#ddd" }} title={row.funding || "Private"}>
                         {row.funding || "Private"}
                       </span>
                     </td>
 
                     {/* Tech Stack */}
                     <td>
-                      <div className="tech-cell-wrapper" title={row.techStack || row.category}>
+                      <div style={{ maxWidth: "150px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", fontSize: "0.8rem", color: "#888" }} title={row.techStack || row.category}>
                         {row.techStack || row.category || "AI / Software"}
                       </div>
                     </td>
 
                     {/* Confidence / Quality */}
                     <td>
-                      <span className="badge badge-emerald">
+                      <span style={{ background: "#fff", color: "#000", padding: "0.25rem 0.5rem", borderRadius: "999px", fontSize: "0.75rem", fontWeight: "600", display: "inline-flex", alignItems: "center", gap: "0.25rem" }}>
                         <ShieldCheck style={{ width: "13px", height: "13px" }} />
                         <span>{row.confidence || 98}% Verified</span>
                       </span>
@@ -327,8 +399,8 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
                     <td style={{ textAlign: "right" }}>
                       <button
                         onClick={() => onInspectSource(row)}
-                        className="btn-secondary"
-                        style={{ padding: "0.45rem 0.85rem", fontSize: "0.78rem", gap: "0.4rem" }}
+                        className="matte-nav-inactive"
+                        style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.45rem 0.85rem", fontSize: "0.78rem", gap: "0.4rem"  }}
                         title="Audit Provenance & Citation"
                       >
                         <Eye style={{ width: "13px", height: "13px" }} />
@@ -353,8 +425,8 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
           <button
             onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
             disabled={currentPage === 1}
-            className="btn-secondary"
-            style={{ padding: "0.4rem 0.75rem", fontSize: "0.78rem", opacity: currentPage === 1 ? 0.4 : 1 }}
+            className="matte-nav-inactive"
+            style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.4rem 0.75rem", fontSize: "0.78rem", opacity: currentPage === 1 ? 0.4 : 1  }}
           >
             <ChevronLeft style={{ width: "15px", height: "15px" }} />
             <span>Prev</span>
@@ -365,12 +437,13 @@ export default function DataTable({ dataset = [], onInspectSource, onExportClick
           <button
             onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
             disabled={currentPage === totalPages}
-            className="btn-secondary"
-            style={{ padding: "0.4rem 0.75rem", fontSize: "0.78rem", opacity: currentPage === totalPages ? 0.4 : 1 }}
+            className="matte-nav-inactive"
+            style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.4rem 0.75rem", fontSize: "0.78rem", opacity: currentPage === totalPages ? 0.4 : 1  }}
           >
             <span>Next</span>
             <ChevronRight style={{ width: "15px", height: "15px" }} />
           </button>
+        </div>
         </div>
       </div>
     </div>

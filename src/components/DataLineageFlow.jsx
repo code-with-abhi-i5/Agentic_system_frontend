@@ -18,10 +18,10 @@ const STAGES = [
     label: "Web Discovery",
     description: "Tavily source search",
     icon: Globe,
-    color: "var(--cyan-primary)",
-    bgColor: "rgba(6, 182, 212, 0.12)",
-    borderColor: "rgba(6, 182, 212, 0.35)",
-    glowColor: "rgba(6, 182, 212, 0.2)",
+    color: "#ccc",
+    bgColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    glowColor: "transparent",
     statLabel: "Sources Found",
     statKey: "sourcesFound",
   },
@@ -30,10 +30,10 @@ const STAGES = [
     label: "AI Extraction",
     description: "LLM entity parsing",
     icon: FileSearch,
-    color: "var(--indigo-light)",
-    bgColor: "rgba(99, 102, 241, 0.12)",
-    borderColor: "rgba(99, 102, 241, 0.35)",
-    glowColor: "rgba(99, 102, 241, 0.2)",
+    color: "#ccc",
+    bgColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    glowColor: "transparent",
     statLabel: "Records Extracted",
     statKey: "rawRecords",
   },
@@ -42,10 +42,10 @@ const STAGES = [
     label: "Deduplication",
     description: "Levenshtein filtering",
     icon: FilterX,
-    color: "var(--purple-primary)",
-    bgColor: "rgba(168, 85, 247, 0.12)",
-    borderColor: "rgba(168, 85, 247, 0.35)",
-    glowColor: "rgba(168, 85, 247, 0.2)",
+    color: "#ccc",
+    bgColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    glowColor: "transparent",
     statLabel: "Duplicates Removed",
     statKey: "removed",
   },
@@ -54,10 +54,10 @@ const STAGES = [
     label: "Quality Validation",
     description: "Confidence scoring",
     icon: ShieldCheck,
-    color: "var(--amber-primary)",
-    bgColor: "rgba(245, 158, 11, 0.12)",
-    borderColor: "rgba(245, 158, 11, 0.35)",
-    glowColor: "rgba(245, 158, 11, 0.2)",
+    color: "#ccc",
+    bgColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    glowColor: "transparent",
     statLabel: "Avg Confidence",
     statKey: "avgConfidence",
     statSuffix: "%",
@@ -67,10 +67,10 @@ const STAGES = [
     label: "Dataset Stored",
     description: "MongoDB committed",
     icon: Database,
-    color: "var(--emerald-primary)",
-    bgColor: "rgba(16, 185, 129, 0.12)",
-    borderColor: "rgba(16, 185, 129, 0.35)",
-    glowColor: "rgba(16, 185, 129, 0.2)",
+    color: "#ccc",
+    bgColor: "rgba(255, 255, 255, 0.02)",
+    borderColor: "rgba(255, 255, 255, 0.05)",
+    glowColor: "transparent",
     statLabel: "Verified Records",
     statKey: "verified",
   },
@@ -94,7 +94,7 @@ export default function DataLineageFlow({ lineage, isVisible = true }) {
   };
 
   return (
-    <div className="lineage-container glass-panel" style={{ padding: "1.5rem" }}>
+    <div className="lineage-container matte-card" style={{ padding: "1.5rem" }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.5rem" }}>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
@@ -102,13 +102,13 @@ export default function DataLineageFlow({ lineage, isVisible = true }) {
             width: "38px",
             height: "38px",
             borderRadius: "12px",
-            background: "linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(16, 185, 129, 0.15))",
-            border: "1px solid rgba(6, 182, 212, 0.3)",
+            background: "rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.1)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
           }}>
-            <Zap style={{ width: "20px", height: "20px", color: "var(--cyan-primary)" }} />
+            <Zap style={{ width: "20px", height: "20px", color: "#fff" }} />
           </div>
           <div>
             <h3 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", margin: 0 }}>

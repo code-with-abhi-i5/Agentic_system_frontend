@@ -89,12 +89,12 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
               width: "32px",
               height: "32px",
               borderRadius: "8px",
-              background: "rgba(99, 102, 241, 0.15)",
-              border: "1px solid rgba(99, 102, 241, 0.3)",
+              background: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--indigo-light)"
+              color: "#fff"
             }}>
               <Download style={{ width: "16px", height: "16px" }} />
             </div>
@@ -110,8 +110,8 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
 
           <button
             onClick={onClose}
-            className="btn-secondary"
-            style={{ width: "30px", height: "30px", padding: 0, borderRadius: "8px" }}
+            className="matte-nav-inactive"
+            style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  width: "30px", height: "30px", padding: 0, borderRadius: "8px"  }}
           >
             <X style={{ width: "15px", height: "15px" }} />
           </button>
@@ -128,8 +128,8 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
             onClick={() => setSelectedFormat("csv")}
             className="export-option-card"
             style={{
-              borderColor: selectedFormat === "csv" ? "var(--indigo-primary)" : "var(--border-subtle)",
-              background: selectedFormat === "csv" ? "rgba(99, 102, 241, 0.1)" : "var(--bg-tertiary)"
+              borderColor: selectedFormat === "csv" ? "#fff" : "var(--border-subtle)",
+              background: selectedFormat === "csv" ? "rgba(255, 255, 255, 0.05)" : "var(--bg-tertiary)"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
@@ -148,11 +148,11 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
               height: "18px",
               borderRadius: "50%",
               border: "2px solid",
-              borderColor: selectedFormat === "csv" ? "var(--indigo-primary)" : "var(--border-medium)",
+              borderColor: selectedFormat === "csv" ? "#fff" : "var(--border-medium)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: selectedFormat === "csv" ? "var(--indigo-primary)" : "transparent"
+              background: selectedFormat === "csv" ? "#fff" : "transparent"
             }}>
               {selectedFormat === "csv" && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }}></span>}
             </span>
@@ -163,8 +163,8 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
             onClick={() => setSelectedFormat("excel")}
             className="export-option-card"
             style={{
-              borderColor: selectedFormat === "excel" ? "var(--indigo-primary)" : "var(--border-subtle)",
-              background: selectedFormat === "excel" ? "rgba(99, 102, 241, 0.1)" : "var(--bg-tertiary)"
+              borderColor: selectedFormat === "excel" ? "#fff" : "var(--border-subtle)",
+              background: selectedFormat === "excel" ? "rgba(255, 255, 255, 0.05)" : "var(--bg-tertiary)"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
@@ -183,11 +183,11 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
               height: "18px",
               borderRadius: "50%",
               border: "2px solid",
-              borderColor: selectedFormat === "excel" ? "var(--indigo-primary)" : "var(--border-medium)",
+              borderColor: selectedFormat === "excel" ? "#fff" : "var(--border-medium)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: selectedFormat === "excel" ? "var(--indigo-primary)" : "transparent"
+              background: selectedFormat === "excel" ? "#fff" : "transparent"
             }}>
               {selectedFormat === "excel" && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }}></span>}
             </span>
@@ -198,8 +198,8 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
             onClick={() => setSelectedFormat("json")}
             className="export-option-card"
             style={{
-              borderColor: selectedFormat === "json" ? "var(--indigo-primary)" : "var(--border-subtle)",
-              background: selectedFormat === "json" ? "rgba(99, 102, 241, 0.1)" : "var(--bg-tertiary)"
+              borderColor: selectedFormat === "json" ? "#fff" : "var(--border-subtle)",
+              background: selectedFormat === "json" ? "rgba(255, 255, 255, 0.05)" : "var(--bg-tertiary)"
             }}
           >
             <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
@@ -218,11 +218,11 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
               height: "18px",
               borderRadius: "50%",
               border: "2px solid",
-              borderColor: selectedFormat === "json" ? "var(--indigo-primary)" : "var(--border-medium)",
+              borderColor: selectedFormat === "json" ? "#fff" : "var(--border-medium)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              background: selectedFormat === "json" ? "var(--indigo-primary)" : "transparent"
+              background: selectedFormat === "json" ? "#fff" : "transparent"
             }}>
               {selectedFormat === "json" && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }}></span>}
             </span>
@@ -230,13 +230,13 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
 
           {/* Actions */}
           <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
-            <button onClick={onClose} className="btn-secondary">
+            <button onClick={onClose} className="matte-nav-inactive">
               Cancel
             </button>
             <button
               onClick={handleDownload}
               disabled={isExporting || success}
-              className="btn-primary"
+              className="matte-btn-white"
               style={{ minWidth: "150px" }}
             >
               {success ? (

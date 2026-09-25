@@ -29,13 +29,13 @@ const REPORT_TYPES = [
 
 const IMPACT_COLORS = {
   high: { bg: "rgba(244, 63, 94, 0.1)", border: "rgba(244, 63, 94, 0.3)", color: "var(--rose-primary)", label: "HIGH" },
-  medium: { bg: "rgba(245, 158, 11, 0.1)", border: "rgba(245, 158, 11, 0.3)", color: "var(--amber-primary)", label: "MEDIUM" },
+  medium: { bg: "rgba(245, 158, 11, 0.1)", border: "rgba(245, 158, 11, 0.3)", color: "#fff", label: "MEDIUM" },
   low: { bg: "rgba(16, 185, 129, 0.1)", border: "rgba(16, 185, 129, 0.3)", color: "var(--emerald-primary)", label: "LOW" },
 };
 
 const PRIORITY_COLORS = {
   high: { bg: "rgba(244, 63, 94, 0.1)", border: "rgba(244, 63, 94, 0.3)", color: "var(--rose-primary)" },
-  medium: { bg: "rgba(245, 158, 11, 0.1)", border: "rgba(245, 158, 11, 0.3)", color: "var(--amber-primary)" },
+  medium: { bg: "rgba(245, 158, 11, 0.1)", border: "rgba(245, 158, 11, 0.3)", color: "#fff" },
   low: { bg: "rgba(16, 185, 129, 0.1)", border: "rgba(16, 185, 129, 0.3)", color: "var(--emerald-primary)" },
 };
 
@@ -154,12 +154,12 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
               width: "44px",
               height: "44px",
               borderRadius: "14px",
-              background: "linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(244, 63, 94, 0.2))",
-              border: "1px solid rgba(245, 158, 11, 0.4)",
+              background: "rgba(255, 255, 255, 0.08)",
+              border: "1px solid rgba(255, 255, 255, 0.2)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              color: "var(--amber-primary)",
+              color: "#fff",
             }}>
               <FileText style={{ width: "22px", height: "22px" }} />
             </div>
@@ -208,8 +208,8 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
                           gap: "0.4rem",
                           padding: "1rem",
                           borderRadius: "14px",
-                          border: `1px solid ${isSelected ? "var(--indigo-primary)" : "var(--border-subtle)"}`,
-                          background: isSelected ? "rgba(99, 102, 241, 0.1)" : "var(--bg-tertiary)",
+                          border: `1px solid ${isSelected ? "#fff" : "var(--border-subtle)"}`,
+                          background: isSelected ? "rgba(255, 255, 255, 0.05)" : "var(--bg-tertiary)",
                           cursor: "pointer",
                           transition: "all 0.15s ease",
                           textAlign: "left",
@@ -218,7 +218,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
                         <Icon style={{
                           width: "20px",
                           height: "20px",
-                          color: isSelected ? "var(--indigo-light)" : "var(--text-muted)",
+                          color: isSelected ? "#fff" : "var(--text-muted)",
                         }} />
                         <span style={{
                           fontSize: "0.85rem",
@@ -243,7 +243,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
               <button
                 onClick={generateReport}
                 disabled={!datasetId}
-                className="btn-primary"
+                className="matte-btn-white"
                 style={{ width: "100%", padding: "0.85rem", fontSize: "0.92rem", justifyContent: "center" }}
               >
                 <Sparkles style={{ width: "18px", height: "18px" }} />
@@ -285,13 +285,13 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
                 width: "64px",
                 height: "64px",
                 borderRadius: "18px",
-                background: "linear-gradient(135deg, rgba(99, 102, 241, 0.15), rgba(6, 182, 212, 0.15))",
-                border: "1px solid rgba(99, 102, 241, 0.3)",
+                background: "linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(6, 182, 212, 0.15))",
+                border: "1px solid rgba(255, 255, 255, 0.2)",
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
               }}>
-                <Loader2 style={{ width: "32px", height: "32px", color: "var(--indigo-light)", animation: "spin 1.2s linear infinite" }} />
+                <Loader2 style={{ width: "32px", height: "32px", color: "#fff", animation: "spin 1.2s linear infinite" }} />
               </div>
               <div style={{ textAlign: "center" }}>
                 <h4 style={{ fontSize: "1rem", fontWeight: "700", color: "#fff", marginBottom: "0.4rem" }}>
@@ -337,7 +337,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
               {/* Executive Summary */}
               <div className="report-section">
                 <h4 className="report-section-title">
-                  <Zap style={{ width: "16px", height: "16px", color: "var(--indigo-light)" }} />
+                  <Zap style={{ width: "16px", height: "16px", color: "#fff" }} />
                   Executive Summary
                 </h4>
                 <p style={{ fontSize: "0.88rem", color: "#cbd5e1", lineHeight: "1.75" }}>
@@ -349,7 +349,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
               {report.keyFindings?.length > 0 && (
                 <div className="report-section">
                   <h4 className="report-section-title">
-                    <Lightbulb style={{ width: "16px", height: "16px", color: "var(--amber-primary)" }} />
+                    <Lightbulb style={{ width: "16px", height: "16px", color: "#fff" }} />
                     Key Findings
                   </h4>
                   <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
@@ -410,7 +410,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
                           <div style={{
                             width: `${geo.percentage}%`,
                             height: "100%",
-                            background: `linear-gradient(90deg, var(--cyan-primary), var(--indigo-primary))`,
+                            background: `linear-gradient(90deg, var(--cyan-primary), #fff)`,
                             borderRadius: "999px",
                             transition: "width 0.5s ease",
                           }} />
@@ -521,12 +521,12 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
         {/* Footer */}
         {report && (
           <div className="report-modal-footer">
-            <button onClick={() => { setReport(null); setError(null); }} className="btn-secondary" style={{ padding: "0.6rem 1rem", fontSize: "0.82rem" }}>
+            <button onClick={() => { setReport(null); setError(null); }} className="matte-nav-inactive" style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.6rem 1rem", fontSize: "0.82rem"  }}>
               <Sparkles style={{ width: "14px", height: "14px" }} />
               <span>New Report</span>
             </button>
             <div style={{ display: "flex", gap: "0.5rem" }}>
-              <button onClick={handleCopyReport} className="btn-secondary" style={{ padding: "0.6rem 1rem", fontSize: "0.82rem" }}>
+              <button onClick={handleCopyReport} className="matte-nav-inactive" style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.6rem 1rem", fontSize: "0.82rem"  }}>
                 {copied ? (
                   <>
                     <CheckCircle2 style={{ width: "14px", height: "14px", color: "var(--emerald-primary)" }} />
@@ -539,7 +539,7 @@ export default function ResearchReportModal({ isOpen, onClose, datasetId, datase
                   </>
                 )}
               </button>
-              <button onClick={handleDownloadMarkdown} className="btn-primary" style={{ padding: "0.6rem 1rem", fontSize: "0.82rem" }}>
+              <button onClick={handleDownloadMarkdown} className="matte-btn-white" style={{ padding: "0.6rem 1rem", fontSize: "0.82rem" }}>
                 <Download style={{ width: "14px", height: "14px" }} />
                 <span>Download .md</span>
               </button>
