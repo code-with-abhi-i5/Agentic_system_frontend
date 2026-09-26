@@ -12,10 +12,28 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
   const [sheetSyncNotice, setSheetSyncNotice] = useState(false);
   const [copiedClipboard, setCopiedClipboard] = useState(false);
 
+  const getDatasetKeys = () => {
+    if (!Array.isArray(dataset) || dataset.length === 0) return [];
+    return Array.from(
+      new Set(
+        dataset.flatMap((item) => (typeof item === "object" && item !== null ? Object.keys(item) : []))
+      )
+    ).filter(
+      (k) => !["_id", "__v", "id", "datasetId"].includes(k)
+    );
+  };
+
   const getTsvData = () => {
-    const headers = ["Company / Entity\tCategory\tFounder / Author\tRole\tEmail\tLocation\tFunding\tTech Stack / Focus\tConfidence\tSource URL"];
+    const keys = getDatasetKeys();
+    if (keys.length === 0) return "";
+    const headers = keys.map((k) => k.replace(/([A-Z])/g, ' $1').trim().replace(/^./, (str) => str.toUpperCase())).join("\t");
     const rows = dataset.map((d) => 
-      `${d.company || d.name || ''}\t${d.category || ''}\t${d.founder || d.author || ''}\t${d.role || ''}\t${d.email || ''}\t${d.location || ''}\t${d.funding || ''}\t${d.techStack || ''}\t${d.confidence || 98}%\t${d.sourceUrl || ''}`
+      keys.map((k) => {
+        let val = d[k];
+        if (val === undefined || val === null) return "";
+        if (typeof val === "object") return JSON.stringify(val);
+        return String(val).replace(/[\t\r\n]+/g, " ");
+      }).join("\t")
     );
     return [headers, ...rows].join("\n");
   };
@@ -33,14 +51,27 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
         }
       } catch (e) {}
 
+      // Proactively open tab so popup blockers don't block async window.open
+      const newTab = window.open("about:blank", "_blank");
+
       // Get Google Sheet URL (either custom webhook URL or sheets.new)
       let sheetUrl = "https://sheets.new";
+      let isWebhookCreated = false;
       try {
         const res = await exportDatasetToGoogleSheet(datasetId);
-        if (res?.sheetUrl) sheetUrl = res.sheetUrl;
+        if (res?.sheetUrl) {
+          sheetUrl = res.sheetUrl;
+          if (res.mode === "webhook" || res.sheetUrl.includes("docs.google.com")) {
+            isWebhookCreated = true;
+          }
+        }
       } catch (e) {}
 
-      window.open(sheetUrl, "_blank");
+      if (newTab) {
+        newTab.location.href = sheetUrl;
+      } else {
+        window.open(sheetUrl, "_blank");
+      }
 
       try {
         confetti({
@@ -51,7 +82,7 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
       } catch (err) {}
 
       setIsExporting(false);
-      setSheetSyncNotice(true);
+      setSheetSyncNotice({ active: true, isWebhookCreated, sheetUrl });
       return;
     }
 
@@ -59,21 +90,19 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
       let content = "";
       let filename = `kortex_dataset_${Date.now()}`;
       let mimeType = "text/plain";
+      const keys = getDatasetKeys();
 
       if (selectedFormat === "csv") {
-        const headers = ["Company", "Founder", "Role", "Email", "Location", "Funding", "TechStack", "Confidence", "SourceUrl"];
-        const rows = dataset.map((d) => [
-          `"${d.company || d.name || ''}"`,
-          `"${d.founder || d.author || ''}"`,
-          `"${d.role || ''}"`,
-          `"${d.email || ''}"`,
-          `"${d.location || ''}"`,
-          `"${d.funding || ''}"`,
-          `"${d.techStack || d.category || ''}"`,
-          `"${d.confidence || 98}%"`,
-          `"${d.sourceUrl || ''}"`
-        ]);
-        content = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+        const headers = keys.map((k) => `"${String(k).replace(/"/g, '""')}"`);
+        const rows = dataset.map((d) =>
+          keys.map((k) => {
+            let val = d[k];
+            if (val === undefined || val === null) return '""';
+            if (typeof val === "object") val = JSON.stringify(val);
+            return `"${String(val).replace(/"/g, '""')}"`;
+          }).join(",")
+        );
+        content = [headers.join(","), ...rows].join("\n");
         filename += ".csv";
         mimeType = "text/csv;charset=utf-8;";
       } else if (selectedFormat === "json") {
@@ -82,9 +111,14 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
         mimeType = "application/json;charset=utf-8;";
       } else {
         // Excel CSV fallback with tab separation
-        const headers = ["Company\tFounder\tRole\tEmail\tLocation\tFunding\tTechStack\tConfidence\tSourceUrl"];
+        const headers = keys.map((k) => k.replace(/([A-Z])/g, ' $1').trim().replace(/^./, (str) => str.toUpperCase())).join("\t");
         const rows = dataset.map((d) => 
-          `${d.company || d.name || ''}\t${d.founder || d.author || ''}\t${d.role || ''}\t${d.email || ''}\t${d.location || ''}\t${d.funding || ''}\t${d.techStack || d.category || ''}\t${d.confidence || 98}%\t${d.sourceUrl || ''}`
+          keys.map((k) => {
+            let val = d[k];
+            if (val === undefined || val === null) return "";
+            if (typeof val === "object") return JSON.stringify(val);
+            return String(val).replace(/[\t\r\n]+/g, " ");
+          }).join("\t")
         );
         content = [headers, ...rows].join("\n");
         filename += ".xls";
@@ -346,11 +380,14 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
               <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
                 <CheckCircle2 style={{ width: "16px", height: "16px", color: "var(--emerald-primary)", flexShrink: 0 }} />
                 <span style={{ fontWeight: "700", color: "#fff" }}>
-                  Google Sheets opened in new tab! 🎉
+                  {sheetSyncNotice?.isWebhookCreated ? "Spreadsheet Created in Google Drive! 🚀" : "Google Sheets opened in new tab! 🎉"}
                 </span>
               </div>
               <p style={{ margin: 0, fontSize: "0.74rem", color: "#aaa", lineHeight: "1.4" }}>
-                All {dataset?.length || 0} records are copied to your clipboard. Click on <strong>Cell A1</strong> in Google Sheets and press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste your pre-formatted table.
+                {sheetSyncNotice?.isWebhookCreated
+                  ? `Your dataset (${dataset?.length || 0} records) has been populated directly into your Google Sheet!`
+                  : `All ${dataset?.length || 0} records are copied to your clipboard. Click on Cell A1 in Google Sheets and press Ctrl+V (or Cmd+V) to paste your pre-formatted table.`
+                }
               </p>
               <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
                 <button
@@ -367,7 +404,7 @@ export default function ExportModal({ dataset = [], datasetId, datasetTitle, isO
                   <span>{copiedClipboard ? "Copied!" : "Copy Data Again"}</span>
                 </button>
                 <a
-                  href="https://sheets.new"
+                  href={sheetSyncNotice?.sheetUrl || "https://sheets.new"}
                   target="_blank"
                   rel="noopener noreferrer"
                   style={{ fontSize: "0.72rem", padding: "0.3rem 0.6rem", display: "inline-flex", alignItems: "center", gap: "0.35rem", color: "var(--emerald-primary)", textDecoration: "none" }}
