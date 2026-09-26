@@ -21,25 +21,25 @@ graph TD
     classDef stream fill:#064e3b,stroke:#10b981,stroke-width:2px,color:#ffffff;
 
     subgraph Client_App ["React 19 SPA (Vite Runtime)"]
-        subgraph Navigation ["Layout & Navigation"]
+        subgraph Navigation ["Layout and Navigation"]
             Header["TopHeader.jsx (Connection Status, Profile)"]:::comp
             SidebarNav["Sidebar.jsx (Conversations, Pinned, History)"]:::comp
         end
 
         subgraph Core_Panels ["Main Workspaces"]
-            ChatPanel["AIChatPanel.jsx\n(Streaming Prompt Input & Markdown)"]:::comp
-            SwarmTracker["LiveSwarmTracker.jsx\n(Active LangGraph Node Visualizer)"]:::comp
-            TableGrid["DataTable.jsx\n(Virtualized Grid, Filters, Sorting)"]:::comp
-            LineageDAG["DataLineageFlow.jsx\n(Visual Source Provenance)"]:::comp
+            ChatPanel["AIChatPanel.jsx<br/>(Streaming Prompt Input and Markdown)"]:::comp
+            SwarmTracker["LiveSwarmTracker.jsx<br/>(Active LangGraph Node Visualizer)"]:::comp
+            TableGrid["DataTable.jsx<br/>(Virtualized Grid, Filters, Sorting)"]:::comp
+            LineageDAG["DataLineageFlow.jsx<br/>(Visual Source Provenance)"]:::comp
         end
 
-        subgraph Modals_Drawers ["Interactive Drawers & Modals"]
+        subgraph Modals_Drawers ["Interactive Drawers and Modals"]
             Inspector["SourceInspectorDrawer.jsx (Raw Scraped HTML/DOM)"]:::comp
             ExportDlg["ExportModal.jsx (CSV / JSON Exporter)"]:::comp
-            SchemaDlg["SchemaReviewModal.jsx (Column Types & Constraints)"]:::comp
+            SchemaDlg["SchemaReviewModal.jsx (Column Types and Constraints)"]:::comp
         end
 
-        AuthContext["AuthContext.jsx\n(JWT In-Memory + Auto-Refresh Interceptor)"]:::client
+        AuthContext["AuthContext.jsx<br/>(JWT In-Memory + Auto-Refresh Interceptor)"]:::client
     end
 
     subgraph Backend_Gateway ["Backend Express 5 Gateway"]
@@ -47,16 +47,16 @@ graph TD
         SSEChannel["SSE Stream (/api/chat/send)"]:::stream
     end
 
-    ChatPanel -->|POST User Prompt + Bearer Token| SSEChannel
-    SSEChannel -.->|SSE Token Chunks| ChatPanel
-    SSEChannel -.->|SSE Node Transitions & Agent Logs| SwarmTracker
-    SSEChannel -.->|SSE Dataset Ready Event| TableGrid
+    ChatPanel -->|"POST User Prompt + Bearer Token"| SSEChannel
+    SSEChannel -.->|"SSE Token Chunks"| ChatPanel
+    SSEChannel -.->|"SSE Node Transitions and Agent Logs"| SwarmTracker
+    SSEChannel -.->|"SSE Dataset Ready Event"| TableGrid
 
-    TableGrid -->|GET /api/dataset/:id| APIRoute
+    TableGrid -->|"GET /api/dataset/:id"| APIRoute
     TableGrid --> ExportDlg
     TableGrid --> LineageDAG
     TableGrid --> Inspector
-    AuthContext <-->|Bearer Auth & Refresh Cookies| APIRoute
+    AuthContext <-->|"Bearer Auth and Refresh Cookies"| APIRoute
 ```
 
 ---
