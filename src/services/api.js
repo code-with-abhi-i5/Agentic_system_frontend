@@ -264,3 +264,22 @@ export const cancelBackendTask = async (taskId) => {
 export const getBackendExportUrl = (datasetId, format = "csv") => {
   return `${API_BASE}/datasets/${datasetId}/export?format=${format}`;
 };
+
+/**
+ * Sync / Export Dataset to Google Sheet
+ */
+export const exportDatasetToGoogleSheet = async (datasetId) => {
+  try {
+    if (!datasetId) return { sheetUrl: "https://sheets.new" };
+    const res = await fetch(`${API_BASE}/datasets/${datasetId}/google-sheet`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    return data?.data || { sheetUrl: "https://sheets.new" };
+  } catch (err) {
+    console.warn("Google Sheet sync fallback:", err.message);
+    return { sheetUrl: "https://sheets.new" };
+  }
+};

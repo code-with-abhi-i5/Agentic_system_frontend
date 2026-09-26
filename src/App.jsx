@@ -520,9 +520,11 @@ export default function App() {
         onClose={() => setInspectingRecord(null)}
       />
 
-      {/* 4. Export Modal (CSV / Excel / JSON) */}
+      {/* 4. Export Modal (CSV / Excel / JSON / Google Sheets) */}
       <ExportModal
         dataset={dataset}
+        datasetId={currentDatasetId}
+        datasetTitle={currentDatasetTitle}
         isOpen={isExportModalOpen}
         onClose={() => setIsExportModalOpen(false)}
       />

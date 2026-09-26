@@ -1,16 +1,59 @@
 import React, { useState } from "react";
-import { X, FileSpreadsheet, FileCode, FileText, Download, CheckCircle2, Sparkles } from "lucide-react";
+import { X, FileSpreadsheet, FileCode, FileText, Download, CheckCircle2, Sparkles, ExternalLink, Copy } from "lucide-react";
 import confetti from "canvas-confetti";
+import { exportDatasetToGoogleSheet } from "../services/api";
 
-export default function ExportModal({ dataset = [], isOpen, onClose }) {
+export default function ExportModal({ dataset = [], datasetId, datasetTitle, isOpen, onClose }) {
   if (!isOpen) return null;
 
   const [selectedFormat, setSelectedFormat] = useState("csv");
   const [isExporting, setIsExporting] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [sheetSyncNotice, setSheetSyncNotice] = useState(false);
+  const [copiedClipboard, setCopiedClipboard] = useState(false);
 
-  const handleDownload = () => {
+  const getTsvData = () => {
+    const headers = ["Company / Entity\tCategory\tFounder / Author\tRole\tEmail\tLocation\tFunding\tTech Stack / Focus\tConfidence\tSource URL"];
+    const rows = dataset.map((d) => 
+      `${d.company || d.name || ''}\t${d.category || ''}\t${d.founder || d.author || ''}\t${d.role || ''}\t${d.email || ''}\t${d.location || ''}\t${d.funding || ''}\t${d.techStack || ''}\t${d.confidence || 98}%\t${d.sourceUrl || ''}`
+    );
+    return [headers, ...rows].join("\n");
+  };
+
+  const handleDownload = async () => {
     setIsExporting(true);
+
+    if (selectedFormat === "sheets") {
+      const tsv = getTsvData();
+
+      try {
+        if (navigator.clipboard) {
+          await navigator.clipboard.writeText(tsv);
+          setCopiedClipboard(true);
+        }
+      } catch (e) {}
+
+      // Get Google Sheet URL (either custom webhook URL or sheets.new)
+      let sheetUrl = "https://sheets.new";
+      try {
+        const res = await exportDatasetToGoogleSheet(datasetId);
+        if (res?.sheetUrl) sheetUrl = res.sheetUrl;
+      } catch (e) {}
+
+      window.open(sheetUrl, "_blank");
+
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      } catch (err) {}
+
+      setIsExporting(false);
+      setSheetSyncNotice(true);
+      return;
+    }
 
     setTimeout(() => {
       let content = "";
@@ -65,9 +108,7 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
           spread: 70,
           origin: { y: 0.6 }
         });
-      } catch (err) {
-        // Ignore if unavailable
-      }
+      } catch (err) {}
 
       setIsExporting(false);
       setSuccess(true);
@@ -103,7 +144,7 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
                 Export Structured Dataset
               </h3>
               <p style={{ fontSize: "0.72rem", color: "var(--text-muted)" }}>
-                Download {dataset?.length || 0} cleaned & source-backed records
+                {datasetTitle ? `${datasetTitle} • ` : ""}{dataset?.length || 0} cleaned & source-backed records
               </p>
             </div>
           </div>
@@ -111,7 +152,7 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
           <button
             onClick={onClose}
             className="matte-nav-inactive"
-            style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  width: "30px", height: "30px", padding: 0, borderRadius: "8px"  }}
+            style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff", width: "30px", height: "30px", padding: 0, borderRadius: "8px" }}
           >
             <X style={{ width: "15px", height: "15px" }} />
           </button>
@@ -120,8 +161,68 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
         {/* Body */}
         <div className="modal-body">
           <label style={{ fontSize: "0.75rem", color: "var(--text-muted)", fontWeight: "700", textTransform: "uppercase" }}>
-            SELECT EXPORT FORMAT:
+            SELECT EXPORT DESTINATION:
           </label>
+
+          {/* Option: Google Sheets (Premier 1-Click Cloud Sync) */}
+          <div
+            onClick={() => setSelectedFormat("sheets")}
+            className="export-option-card"
+            style={{
+              borderColor: selectedFormat === "sheets" ? "var(--emerald-primary)" : "var(--border-subtle)",
+              background: selectedFormat === "sheets" ? "rgba(16, 185, 129, 0.08)" : "var(--bg-tertiary)",
+              cursor: "pointer",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: "0.85rem" }}>
+              <div style={{
+                width: "28px",
+                height: "28px",
+                borderRadius: "6px",
+                background: "#0F9D58",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0
+              }}>
+                <FileSpreadsheet style={{ width: "17px", height: "17px", color: "#fff" }} />
+              </div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.45rem" }}>
+                  <span style={{ fontSize: "0.88rem", fontWeight: "700", color: "#fff", display: "block" }}>
+                    Google Sheets
+                  </span>
+                  <span style={{
+                    fontSize: "0.62rem",
+                    padding: "1px 6px",
+                    borderRadius: "4px",
+                    background: "rgba(16, 185, 129, 0.2)",
+                    color: "var(--emerald-primary)",
+                    fontWeight: "700",
+                    letterSpacing: "0.03em"
+                  }}>
+                    1-CLICK FREE
+                  </span>
+                </div>
+                <span style={{ fontSize: "0.72rem", color: "var(--text-subtle)" }}>
+                  Open in Google Sheets with pre-formatted grid columns & clipboard paste
+                </span>
+              </div>
+            </div>
+            <span style={{
+              width: "18px",
+              height: "18px",
+              borderRadius: "50%",
+              border: "2px solid",
+              borderColor: selectedFormat === "sheets" ? "var(--emerald-primary)" : "var(--border-medium)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              background: selectedFormat === "sheets" ? "var(--emerald-primary)" : "transparent"
+            }}>
+              {selectedFormat === "sheets" && <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff" }}></span>}
+            </span>
+          </div>
 
           {/* Option: CSV */}
           <div
@@ -139,7 +240,7 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
                   CSV (Comma Separated)
                 </span>
                 <span style={{ fontSize: "0.72rem", color: "var(--text-subtle)" }}>
-                  Ideal for Pandas, Excel, Google Sheets, or CRM imports
+                  Ideal for Pandas, Excel, or CRM database imports
                 </span>
               </div>
             </div>
@@ -174,7 +275,7 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
                   Excel Spreadsheet (.xls)
                 </span>
                 <span style={{ fontSize: "0.72rem", color: "var(--text-subtle)" }}>
-                  Pre-formatted workbook with column headers
+                  Pre-formatted Microsoft Excel workbook with column headers
                 </span>
               </div>
             </div>
@@ -228,6 +329,56 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
             </span>
           </div>
 
+          {/* Google Sheets Sync Notification Card */}
+          {sheetSyncNotice && (
+            <div style={{
+              marginTop: "0.75rem",
+              padding: "0.8rem 1rem",
+              borderRadius: "10px",
+              background: "rgba(16, 185, 129, 0.08)",
+              border: "1px solid rgba(16, 185, 129, 0.25)",
+              fontSize: "0.78rem",
+              color: "#e5e5e5",
+              display: "flex",
+              flexDirection: "column",
+              gap: "0.45rem"
+            }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                <CheckCircle2 style={{ width: "16px", height: "16px", color: "var(--emerald-primary)", flexShrink: 0 }} />
+                <span style={{ fontWeight: "700", color: "#fff" }}>
+                  Google Sheets opened in new tab! 🎉
+                </span>
+              </div>
+              <p style={{ margin: 0, fontSize: "0.74rem", color: "#aaa", lineHeight: "1.4" }}>
+                All {dataset?.length || 0} records are copied to your clipboard. Click on <strong>Cell A1</strong> in Google Sheets and press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste your pre-formatted table.
+              </p>
+              <div style={{ display: "flex", gap: "0.5rem", marginTop: "0.2rem" }}>
+                <button
+                  onClick={() => {
+                    const tsv = getTsvData();
+                    navigator.clipboard.writeText(tsv);
+                    setCopiedClipboard(true);
+                    setTimeout(() => setCopiedClipboard(false), 2000);
+                  }}
+                  className="matte-nav-inactive"
+                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.6rem", display: "inline-flex", alignItems: "center", gap: "0.35rem", cursor: "pointer" }}
+                >
+                  <Copy style={{ width: "12px", height: "12px" }} />
+                  <span>{copiedClipboard ? "Copied!" : "Copy Data Again"}</span>
+                </button>
+                <a
+                  href="https://sheets.new"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: "0.72rem", padding: "0.3rem 0.6rem", display: "inline-flex", alignItems: "center", gap: "0.35rem", color: "var(--emerald-primary)", textDecoration: "none" }}
+                >
+                  <ExternalLink style={{ width: "12px", height: "12px" }} />
+                  <span>Re-open Google Sheet</span>
+                </a>
+              </div>
+            </div>
+          )}
+
           {/* Actions */}
           <div style={{ marginTop: "1rem", display: "flex", justifyContent: "flex-end", gap: "0.75rem" }}>
             <button onClick={onClose} className="matte-nav-inactive">
@@ -236,10 +387,24 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
             <button
               onClick={handleDownload}
               disabled={isExporting || success}
-              className="matte-btn-white"
-              style={{ minWidth: "150px" }}
+              className={selectedFormat === "sheets" ? "matte-btn-white" : "matte-btn-white"}
+              style={{
+                minWidth: "160px",
+                background: selectedFormat === "sheets" ? "var(--emerald-primary)" : "#fff",
+                color: selectedFormat === "sheets" ? "#000" : "#000",
+                fontWeight: "700"
+              }}
             >
-              {success ? (
+              {selectedFormat === "sheets" ? (
+                isExporting ? (
+                  <span>Syncing...</span>
+                ) : (
+                  <>
+                    <ExternalLink style={{ width: "15px", height: "15px" }} />
+                    <span>Open in Google Sheets ↗</span>
+                  </>
+                )
+              ) : success ? (
                 <>
                   <CheckCircle2 style={{ width: "16px", height: "16px" }} />
                   <span>Downloaded!</span>
@@ -259,3 +424,4 @@ export default function ExportModal({ dataset = [], isOpen, onClose }) {
     </div>
   );
 }
+
