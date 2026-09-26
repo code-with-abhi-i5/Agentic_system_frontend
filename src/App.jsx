@@ -15,7 +15,7 @@ import AIChatPanel from "./components/AIChatPanel";
 import DataLineageFlow from "./components/DataLineageFlow";
 import ResearchReportModal from "./components/ResearchReportModal";
 import { useAuth } from "./context/AuthContext";
-import { getBackendDatasets, getBackendTasks, launchBackendTask, confirmSchema, cancelBackendTask } from "./services/api";
+import { getBackendDatasets, getBackendTasks, getDatasetRecords, launchBackendTask, confirmSchema, cancelBackendTask } from "./services/api";
 import confetti from "canvas-confetti";
 
 export default function App() {
@@ -254,6 +254,38 @@ export default function App() {
     }
   };
 
+  const handleSelectDataset = (ds) => {
+    if (!ds) return;
+    setCurrentDatasetId(ds._id);
+    setCurrentDatasetTitle(ds.title || ds.prompt || "");
+    if (ds.records && ds.records.length > 0) {
+      setDataset(ds.records);
+    }
+    if (ds.lineage) {
+      setLineageData(ds.lineage);
+    }
+  };
+
+  const handleOpenAIChat = (meta) => {
+    if (meta?.id) setCurrentDatasetId(meta.id);
+    if (meta?.title) setCurrentDatasetTitle(meta.title);
+    if (meta?.records && meta.records.length > 0) setDataset(meta.records);
+    setShowAIChat(true);
+  };
+
+  const handleOpenReport = (meta) => {
+    if (meta?.id) setCurrentDatasetId(meta.id);
+    if (meta?.title) setCurrentDatasetTitle(meta.title);
+    setShowReportModal(true);
+  };
+
+  const handleOpenExport = (meta) => {
+    if (meta?.id) setCurrentDatasetId(meta.id);
+    if (meta?.title) setCurrentDatasetTitle(meta.title);
+    if (meta?.records && meta.records.length > 0) setDataset(meta.records);
+    setIsExportModalOpen(true);
+  };
+
   const handleLoadWorkflowDataset = (task) => {
     if (task.datasetId?.records?.length) {
       setDataset(task.datasetId.records);
@@ -321,10 +353,11 @@ export default function App() {
               <div style={{ marginTop: "1rem", width: "100%" }}>
                 <DataTable
                   dataset={dataset}
+                  datasetId={currentDatasetId}
                   onInspectSource={(record) => setInspectingRecord(record)}
-                  onExportClick={() => setIsExportModalOpen(true)}
-                  onChatClick={() => setShowAIChat(true)}
-                  onReportClick={() => setShowReportModal(true)}
+                  onExportClick={handleOpenExport}
+                  onChatClick={handleOpenAIChat}
+                  onReportClick={handleOpenReport}
                 />
               </div>
               </>
@@ -420,7 +453,10 @@ export default function App() {
                       key={ds._id} 
                       className="matte-card" 
                       style={{ cursor: "pointer", transition: "all 0.2s" }}
-                      onClick={() => navigate(`/datasets/${ds._id}`)}
+                      onClick={() => {
+                        handleSelectDataset(ds);
+                        navigate(`/datasets/${ds._id}`);
+                      }}
                     >
                       <h3 style={{ fontSize: "1rem", color: "#fff", fontWeight: "600", marginBottom: "0.5rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {ds.title || ds.prompt || "Untitled Dataset"}
@@ -430,7 +466,17 @@ export default function App() {
                         <span style={{ color: "var(--emerald-primary)" }}>{ds.records?.length || 0} Records</span>
                       </div>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
-                        <button className="matte-btn-white" style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}>View Data</button>
+                        <button 
+                          className="matte-btn-white" 
+                          style={{ flex: 1, padding: "0.5rem", fontSize: "0.8rem" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectDataset(ds);
+                            navigate(`/datasets/${ds._id}`);
+                          }}
+                        >
+                          View Data
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -445,11 +491,13 @@ export default function App() {
             
             <Route path="/datasets/:id" element={
               <DatasetViewerRoute 
+                allDatasets={allDatasets}
+                onSelectDataset={handleSelectDataset}
                 lineageData={lineageData}
                 onInspectSource={setInspectingRecord}
-                onExportClick={() => setIsExportModalOpen(true)}
-                onChatClick={() => setShowAIChat(true)}
-                onReportClick={() => setShowReportModal(true)}
+                onExportClick={handleOpenExport}
+                onChatClick={handleOpenAIChat}
+                onReportClick={handleOpenReport}
               />
             } />
 
@@ -514,9 +562,35 @@ export default function App() {
     </div>
   );
 }
-function DatasetViewerRoute({ lineageData, onInspectSource, onExportClick, onChatClick, onReportClick }) {
+function DatasetViewerRoute({
+  allDatasets = [],
+  onSelectDataset,
+  lineageData,
+  onInspectSource,
+  onExportClick,
+  onChatClick,
+  onReportClick
+}) {
   const { id } = useParams();
   const navigate = useNavigate();
+  const [activeMeta, setActiveMeta] = useState(null);
+
+  useEffect(() => {
+    if (!id) return;
+    const found = (allDatasets || []).find((d) => d._id === id);
+    if (found) {
+      setActiveMeta(found);
+      if (onSelectDataset) onSelectDataset(found);
+    } else {
+      getDatasetRecords(id, { page: 1, limit: 1 }).then((res) => {
+        if (res?.title || res?.datasetId) {
+          const meta = { _id: res.datasetId || id, title: res.title, prompt: res.prompt, records: res.records };
+          setActiveMeta(meta);
+          if (onSelectDataset) onSelectDataset(meta);
+        }
+      }).catch(() => {});
+    }
+  }, [id, allDatasets]);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
@@ -527,13 +601,13 @@ function DatasetViewerRoute({ lineageData, onInspectSource, onExportClick, onCha
       >
         ← Back to Repositories
       </button>
-      <DataLineageFlow lineage={lineageData} isVisible={!!lineageData} />
+      <DataLineageFlow lineage={activeMeta?.lineage || lineageData} isVisible={!!(activeMeta?.lineage || lineageData)} />
       <DataTable
         datasetId={id}
         onInspectSource={onInspectSource}
-        onExportClick={onExportClick}
-        onChatClick={onChatClick}
-        onReportClick={onReportClick}
+        onExportClick={(meta) => onExportClick({ id, title: activeMeta?.title, ...meta })}
+        onChatClick={(meta) => onChatClick({ id, title: activeMeta?.title, ...meta })}
+        onReportClick={(meta) => onReportClick({ id, title: activeMeta?.title, ...meta })}
       />
     </div>
   );

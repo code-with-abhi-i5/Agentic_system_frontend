@@ -31,6 +31,7 @@ export default function DataTable({ dataset = [], datasetId, onInspectSource, on
   // Server-side State
   const [serverRecords, setServerRecords] = useState([]);
   const [serverTotal, setServerTotal] = useState(0);
+  const [serverTitle, setServerTitle] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // Fetch from server if datasetId is provided
@@ -49,6 +50,7 @@ export default function DataTable({ dataset = [], datasetId, onInspectSource, on
         });
         setServerRecords(data.records || []);
         setServerTotal(data.pagination?.total || data.total || 0);
+        if (data.title) setServerTitle(data.title);
       } catch (e) {
         console.error("Failed to fetch records", e);
       } finally {
@@ -252,7 +254,7 @@ export default function DataTable({ dataset = [], datasetId, onInspectSource, on
           </span>
           {onChatClick && (
             <button
-              onClick={onChatClick}
+              onClick={() => onChatClick({ id: datasetId, title: serverTitle, records: activeDataset })}
               className="matte-nav-inactive"
               style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.55rem 0.95rem", fontSize: "0.82rem"  }}
               title="Chat with this dataset using AI"
@@ -263,7 +265,7 @@ export default function DataTable({ dataset = [], datasetId, onInspectSource, on
           )}
           {onReportClick && (
             <button
-              onClick={onReportClick}
+              onClick={() => onReportClick({ id: datasetId, title: serverTitle, records: activeDataset })}
               className="matte-nav-inactive"
               style={{ border: "1px solid rgba(255,255,255,0.1)", background: "transparent", color: "#fff",  padding: "0.55rem 0.95rem", fontSize: "0.82rem"  }}
               title="Generate AI research report"
@@ -273,7 +275,7 @@ export default function DataTable({ dataset = [], datasetId, onInspectSource, on
             </button>
           )}
           <button
-            onClick={onExportClick}
+            onClick={() => onExportClick && onExportClick({ id: datasetId, title: serverTitle, records: activeDataset })}
             className="matte-btn-white"
             style={{ padding: "0.55rem 1.1rem", fontSize: "0.82rem" }}
           >
