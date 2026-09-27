@@ -281,9 +281,46 @@ export default function AIChatPanel({ isOpen, onClose, datasetId, datasetTitle, 
                   </div>
                 )}
                 {msg.relevantRecords && msg.relevantRecords.length > 0 && (
-                  <div className="bubble-records-badge">
-                    <Database style={{ width: "12px", height: "12px" }} />
-                    <span>{msg.relevantRecords.length} relevant records found</span>
+                  <div style={{ marginTop: "0.6rem", display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+                    <div className="bubble-records-badge" style={{ alignSelf: "flex-start" }}>
+                      <Database style={{ width: "12px", height: "12px" }} />
+                      <span>{msg.relevantRecords.length} Filtered Records</span>
+                    </div>
+
+                    {/* Inline Mini-Table Matching Existing Table Styling */}
+                    <div style={{
+                      background: "rgba(0, 0, 0, 0.4)",
+                      border: "1px solid rgba(255, 255, 255, 0.08)",
+                      borderRadius: "10px",
+                      overflowX: "auto",
+                      maxHeight: "220px",
+                      fontSize: "0.78rem"
+                    }}>
+                      <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left" }}>
+                        <thead>
+                          <tr style={{ background: "rgba(255, 255, 255, 0.03)", borderBottom: "1px solid rgba(255, 255, 255, 0.06)" }}>
+                            <th style={{ padding: "0.45rem 0.65rem", color: "var(--text-muted)", fontWeight: "600" }}>Entity / Company</th>
+                            <th style={{ padding: "0.45rem 0.65rem", color: "var(--text-muted)", fontWeight: "600" }}>Funding / Valuation</th>
+                            <th style={{ padding: "0.45rem 0.65rem", color: "var(--text-muted)", fontWeight: "600" }}>Key Detail</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {msg.relevantRecords.slice(0, 6).map((rec, rIdx) => (
+                            <tr key={rIdx} style={{ borderBottom: "1px solid rgba(255, 255, 255, 0.03)" }}>
+                              <td style={{ padding: "0.45rem 0.65rem", color: "#fff", fontWeight: "600" }}>
+                                {rec.company || rec.name || rec.title || Object.values(rec)[0] || "—"}
+                              </td>
+                              <td style={{ padding: "0.45rem 0.65rem", color: "#10b981", fontFamily: "var(--font-mono, monospace)" }}>
+                                {rec.funding || rec.valuation || rec.budget || "—"}
+                              </td>
+                              <td style={{ padding: "0.45rem 0.65rem", color: "var(--text-muted)" }}>
+                                {rec.founder || rec.location || rec.category || "—"}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 )}
                 <span className="bubble-time">{msg.timestamp}</span>

@@ -264,3 +264,59 @@ export const cancelBackendTask = async (taskId) => {
 export const getBackendExportUrl = (datasetId, format = "csv") => {
   return `${API_BASE}/datasets/${datasetId}/export?format=${format}`;
 };
+
+/**
+ * Time-Travel Data Diffs (Git for Web Data)
+ */
+export const getDatasetDiff = async (datasetId, compareWithId = null) => {
+  try {
+    const url = compareWithId
+      ? `${API_BASE}/datasets/${datasetId}/diff?compareWith=${compareWithId}`
+      : `${API_BASE}/datasets/${datasetId}/diff`;
+
+    const res = await fetch(url, { headers: getAuthHeaders() });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    return data.data;
+  } catch (error) {
+    console.error("Fetch dataset diff error:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetch all versions of a dataset for time-travel comparison
+ */
+export const getDatasetVersions = async (datasetId) => {
+  try {
+    const res = await fetch(`${API_BASE}/datasets/${datasetId}/versions`, {
+      headers: getAuthHeaders(),
+    });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    return data.data || [];
+  } catch (error) {
+    console.error("Fetch dataset versions error:", error);
+    return [];
+  }
+};
+
+/**
+ * Configure Autonomous Swarm Cron for a dataset
+ */
+export const configureDatasetSchedule = async (datasetId, scheduleConfig) => {
+  try {
+    const res = await fetch(`${API_BASE}/datasets/${datasetId}/schedule`, {
+      method: "POST",
+      headers: getAuthHeaders(),
+      body: JSON.stringify(scheduleConfig),
+    });
+    if (!res.ok) throw new Error(`HTTP error ${res.status}`);
+    const data = await res.json();
+    return data;
+  } catch (error) {
+    console.error("Configure schedule error:", error);
+    throw error;
+  }
+};
+

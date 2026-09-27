@@ -16,6 +16,7 @@ import DataLineageFlow from "./components/DataLineageFlow";
 import ResearchReportModal from "./components/ResearchReportModal";
 import { useAuth } from "./context/AuthContext";
 import { getBackendDatasets, getBackendTasks, getDatasetRecords, launchBackendTask, confirmSchema, cancelBackendTask } from "./services/api";
+import { calculateFreshness } from "./utils/freshness";
 import confetti from "canvas-confetti";
 
 export default function App() {
@@ -461,9 +462,26 @@ export default function App() {
                       <h3 style={{ fontSize: "1rem", color: "#fff", fontWeight: "600", marginBottom: "0.5rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                         {ds.title || ds.prompt || "Untitled Dataset"}
                       </h3>
-                      <div style={{ display: "flex", justifyContent: "space-between", color: "#888", fontSize: "0.8rem", marginBottom: "1rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#888", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
                         <span>{new Date(ds.createdAt).toLocaleDateString()}</span>
-                        <span style={{ color: "var(--emerald-primary)" }}>{ds.records?.length || 0} Records</span>
+                        {(() => {
+                          const fresh = calculateFreshness(ds.createdAt);
+                          return (
+                            <span style={{
+                              fontFamily: "var(--font-mono, monospace)",
+                              fontSize: "0.7rem",
+                              letterSpacing: "0.04em",
+                              padding: "0.15rem 0.45rem",
+                              borderRadius: "4px",
+                              background: fresh.badgeColor,
+                              color: fresh.textColor,
+                              border: `1px solid ${fresh.isStale ? "rgba(245, 158, 11, 0.3)" : "rgba(255, 255, 255, 0.08)"}`
+                            }}>
+                              ● {fresh.label}
+                            </span>
+                          );
+                        })()}
+                        <span style={{ color: "var(--emerald-primary)", fontWeight: "600" }}>{ds.records?.length || 0} Records</span>
                       </div>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
                         <button 

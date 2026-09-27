@@ -813,8 +813,8 @@ body::before {
 }
 
 .inspector-drawer {
-  width: 520px;
-  max-width: 90vw;
+  width: 620px;
+  max-width: 95vw;
   height: 100vh;
   background: var(--bg-secondary);
   border-left: 1px solid var(--border-medium);
@@ -1668,9 +1668,16 @@ body::before {
 
 .matte-grid-layout {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  grid-template-columns: 1.1fr 1fr 1.1fr;
+  gap: 1.25rem;
+  margin-bottom: 1.25rem;
+  align-items: stretch;
+}
+
+@media (max-width: 1200px) {
+  .matte-grid-layout {
+    grid-template-columns: 1fr;
+  }
 }
 
 .matte-bottom-layout {
