@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Search, Globe, ShieldCheck, Wrench, X } from "lucide-react";
 import SelfHealingTimeline from "./SelfHealingTimeline";
 
-export default function LiveSwarmTracker({ currentStep = 0, logs = [], isRunning = false }) {
+export default function LiveSwarmTracker({ currentStep = 0, logs = [], isRunning = false, headerActions = null }) {
   const [showHealingDetails, setShowHealingDetails] = useState(false);
 
   const hasLogs = Array.isArray(logs) && logs.length > 0;
@@ -87,7 +87,7 @@ export default function LiveSwarmTracker({ currentStep = 0, logs = [], isRunning
     <div className="matte-card" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between", gap: "0.85rem" }}>
       {/* Header */}
       <div>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.4rem", gap: "0.5rem", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <div style={{
               width: "30px",
@@ -111,54 +111,57 @@ export default function LiveSwarmTracker({ currentStep = 0, logs = [], isRunning
             </div>
           </div>
 
-          {/* Dynamic Status Badge */}
-          {isRunning ? (
-            <span style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "0.66rem",
-              fontWeight: "700",
-              letterSpacing: "0.05em",
-              color: "#10b981",
-              background: "rgba(16, 185, 129, 0.12)",
-              padding: "0.15rem 0.5rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem"
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite" }} />
-              SWARM ENGAGED
-            </span>
-          ) : isCompleted ? (
-            <span style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "0.66rem",
-              fontWeight: "700",
-              letterSpacing: "0.05em",
-              color: "#10b981",
-              background: "rgba(16, 185, 129, 0.08)",
-              padding: "0.15rem 0.5rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(16, 185, 129, 0.2)"
-            }}>
-              MISSION COMPLETE
-            </span>
-          ) : (
-            <span style={{
-              fontFamily: "var(--font-mono, monospace)",
-              fontSize: "0.66rem",
-              fontWeight: "600",
-              letterSpacing: "0.05em",
-              color: "#94a3b8",
-              background: "rgba(148, 163, 184, 0.08)",
-              padding: "0.15rem 0.5rem",
-              borderRadius: "4px",
-              border: "1px solid rgba(148, 163, 184, 0.15)"
-            }}>
-              STANDBY
-            </span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {headerActions}
+            {/* Dynamic Status Badge */}
+            {isRunning ? (
+              <span style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "0.66rem",
+                fontWeight: "700",
+                letterSpacing: "0.05em",
+                color: "#10b981",
+                background: "rgba(16, 185, 129, 0.12)",
+                padding: "0.15rem 0.5rem",
+                borderRadius: "4px",
+                border: "1px solid rgba(16, 185, 129, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem"
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#10b981", animation: "pulse 1.5s infinite" }} />
+                SWARM ENGAGED
+              </span>
+            ) : isCompleted ? (
+              <span style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "0.66rem",
+                fontWeight: "700",
+                letterSpacing: "0.05em",
+                color: "#10b981",
+                background: "rgba(16, 185, 129, 0.08)",
+                padding: "0.15rem 0.5rem",
+                borderRadius: "4px",
+                border: "1px solid rgba(16, 185, 129, 0.2)"
+              }}>
+                MISSION COMPLETE
+              </span>
+            ) : (
+              <span style={{
+                fontFamily: "var(--font-mono, monospace)",
+                fontSize: "0.66rem",
+                fontWeight: "600",
+                letterSpacing: "0.05em",
+                color: "#94a3b8",
+                background: "rgba(148, 163, 184, 0.08)",
+                padding: "0.15rem 0.5rem",
+                borderRadius: "4px",
+                border: "1px solid rgba(148, 163, 184, 0.15)"
+              }}>
+                STANDBY
+              </span>
+            )}
+          </div>
         </div>
 
         <p style={{ margin: "0 0 0.75rem 0", fontSize: "0.78rem", color: "var(--text-muted)" }}>

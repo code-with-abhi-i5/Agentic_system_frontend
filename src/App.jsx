@@ -5,6 +5,7 @@ import TopHeader from "./components/TopHeader";
 import OverviewStats from "./components/OverviewStats";
 import PromptStudio from "./components/PromptStudio";
 import LiveSwarmTracker from "./components/LiveSwarmTracker";
+import SwarmTelemetryPanel from "./components/SwarmTelemetryPanel";
 import DataTable from "./components/DataTable";
 import SourceInspectorDrawer from "./components/SourceInspectorDrawer";
 import ExportModal from "./components/ExportModal";
@@ -368,7 +369,7 @@ export default function App() {
             {/* TAB 1: MISSION CONTROL (Prompt Studio + Live Swarm Tracker + Data Table) */}
             <Route path="/mission-control" element={
               <>
-              {/* Grid Layout Top Section */}
+              {/* Grid Layout Top Section - 2-Column Responsive Layout */}
               <div className="matte-grid-layout">
                 {/* Column 1: Prompt Studio */}
                 <PromptStudio
@@ -377,11 +378,10 @@ export default function App() {
                   isRunning={isRunning}
                 />
 
-                {/* Column 2: Stats */}
-                <OverviewStats dataset={dataset} tasks={tasks} isRunning={isRunning} />
-
-                {/* Column 3: Live Swarm Tracker */}
-                <LiveSwarmTracker
+                {/* Column 2: Swarm Engine & Yield Telemetry */}
+                <SwarmTelemetryPanel
+                  dataset={dataset}
+                  tasks={tasks}
                   currentStep={currentStep}
                   logs={logs}
                   isRunning={isRunning}
@@ -408,70 +408,105 @@ export default function App() {
               <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
               <OverviewStats dataset={dataset} tasks={tasks} isRunning={isRunning} />
 
-              <div style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
-                gap: "1.5rem"
-              }}>
-                <div className="matte-card">
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
-                    Autonomous Scraping vs Manual Scrapers
-                  </h3>
-                  <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
-                    How Cerkit AI eliminates workflow maintenance overhead
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", fontSize: "0.82rem" }}>
-                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
-                      ✓ <strong>Zero-Maintenance Scrapers:</strong> Agent adapts to DOM changes on-the-fly.
-                    </div>
-                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
-                      ✓ <strong>Source Provenance:</strong> Every record is linked with full URL citations.
-                    </div>
-                    <div style={{ padding: "1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
-                      ✓ <strong>Multi-Model Balancing:</strong> Heavy tools use Groq / Tavily, summarization uses Qwen / Llama.
-                    </div>
-                  </div>
-                </div>
-                <div className="matte-card">
-                  <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
-                    Data Cleanliness Guardrails
-                  </h3>
-                  <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
-                    Active validation metrics applied to every extraction run
-                  </p>
-                  <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
-                        <span style={{ color: "#aaa" }}>Schema Conformance</span>
-                        <span style={{ color: "#fff", fontWeight: "600" }}>100%</span>
-                      </div>
-                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "100%", height: "100%", background: "#fff" }}></div>
+              {(() => {
+                const hasRecords = Array.isArray(dataset) && dataset.length > 0;
+                const schemaConformanceRate = hasRecords
+                  ? Math.round((dataset.filter((r) => r.company || r.title || r.name).length / dataset.length) * 100)
+                  : 0;
+
+                const totalDupesRemoved = Array.isArray(tasks)
+                  ? tasks.reduce((sum, t) => sum + (t.stats?.duplicatesRemoved || 0), 0)
+                  : 0;
+                const totalRecordsIngested = Array.isArray(tasks)
+                  ? tasks.reduce((sum, t) => sum + (t.stats?.recordsCount || 0), 0)
+                  : dataset.length;
+                const dedupEfficiency = (totalRecordsIngested + totalDupesRemoved) > 0
+                  ? Math.round((totalRecordsIngested / (totalRecordsIngested + totalDupesRemoved)) * 100)
+                  : (hasRecords ? 100 : 0);
+
+                const verifiedSourcesCount = hasRecords
+                  ? dataset.filter((r) => r.sourceUrl && (r.sourceUrl.startsWith("http://") || r.sourceUrl.startsWith("https://"))).length
+                  : 0;
+                const sourceVerificationRate = hasRecords
+                  ? Math.round((verifiedSourcesCount / dataset.length) * 100)
+                  : 0;
+
+                return (
+                  <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(360px, 1fr))",
+                    gap: "1.5rem"
+                  }}>
+                    <div className="matte-card">
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
+                        Autonomous Scraping vs Manual Scrapers
+                      </h3>
+                      <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
+                        How Cerkit AI eliminates workflow maintenance overhead
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "0.85rem", fontSize: "0.82rem" }}>
+                        <div style={{ padding: "0.85rem 1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
+                          ✓ <strong>Zero-Maintenance Scrapers:</strong> Vision Self-Healer repairs drifted DOM selectors automatically.
+                        </div>
+                        <div style={{ padding: "0.85rem 1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
+                          ✓ <strong>Source Provenance:</strong> Every record is audited with live URL citations and corroboration scores.
+                        </div>
+                        <div style={{ padding: "0.85rem 1rem", borderRadius: "8px", background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.05)", color: "#ccc" }}>
+                          ✓ <strong>Live Telemetry:</strong> Managed <strong>{allDatasets.length}</strong> dataset(s) across <strong>{tasks.length}</strong> workflow execution(s).
+                        </div>
                       </div>
                     </div>
 
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
-                        <span style={{ color: "#aaa" }}>Duplicate Elimination Rate</span>
-                        <span style={{ color: "#fff", fontWeight: "600" }}>98.5%</span>
-                      </div>
-                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "98.5%", height: "100%", background: "#fff" }}></div>
-                      </div>
-                    </div>
+                    <div className="matte-card">
+                      <h3 style={{ fontSize: "1.1rem", fontWeight: "600", color: "#fff", marginBottom: "0.5rem" }}>
+                        Data Cleanliness Guardrails
+                      </h3>
+                      <p style={{ fontSize: "0.8rem", color: "#888", marginBottom: "1.5rem" }}>
+                        Live quality metrics computed from active dataset and task history
+                      </p>
+                      <div style={{ display: "flex", flexDirection: "column", gap: "1.2rem" }}>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                            <span style={{ color: "#aaa" }}>Schema Conformance</span>
+                            <span style={{ color: "#fff", fontWeight: "600" }}>
+                              {hasRecords ? `${schemaConformanceRate}%` : "—"}
+                            </span>
+                          </div>
+                          <div style={{ height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "999px", overflow: "hidden" }}>
+                            <div style={{ width: `${hasRecords ? schemaConformanceRate : 0}%`, height: "100%", background: "#5DD62C", transition: "width 0.4s ease" }}></div>
+                          </div>
+                        </div>
 
-                    <div>
-                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
-                        <span style={{ color: "#aaa" }}>Source Verification Completeness</span>
-                        <span style={{ color: "#fff", fontWeight: "600" }}>100.0%</span>
-                      </div>
-                      <div style={{ height: "4px", background: "rgba(255,255,255,0.1)", borderRadius: "999px", overflow: "hidden" }}>
-                        <div style={{ width: "100%", height: "100%", background: "#fff" }}></div>
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                            <span style={{ color: "#aaa" }}>Duplicate Elimination Rate</span>
+                            <span style={{ color: "#fff", fontWeight: "600" }}>
+                              {hasRecords 
+                                ? (totalDupesRemoved > 0 ? `${totalDupesRemoved} removed (${dedupEfficiency}% clean)` : "100% Unique") 
+                                : "—"}
+                            </span>
+                          </div>
+                          <div style={{ height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "999px", overflow: "hidden" }}>
+                            <div style={{ width: `${hasRecords ? dedupEfficiency : 0}%`, height: "100%", background: "#38bdf8", transition: "width 0.4s ease" }}></div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.8rem", marginBottom: "0.4rem" }}>
+                            <span style={{ color: "#aaa" }}>Source Verification Completeness</span>
+                            <span style={{ color: "#fff", fontWeight: "600" }}>
+                              {hasRecords ? `${sourceVerificationRate}% (${verifiedSourcesCount}/${dataset.length} cited)` : "—"}
+                            </span>
+                          </div>
+                          <div style={{ height: "5px", background: "rgba(255,255,255,0.08)", borderRadius: "999px", overflow: "hidden" }}>
+                            <div style={{ width: `${hasRecords ? sourceVerificationRate : 0}%`, height: "100%", background: "#10b981", transition: "width 0.4s ease" }}></div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              </div>
+                );
+              })()}
               </div>
             } />
 

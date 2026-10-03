@@ -1,7 +1,7 @@
 import React from "react";
 import { ShieldCheck, Activity } from "lucide-react";
 
-export default function OverviewStats({ dataset = [], tasks = [], isRunning = false }) {
+export default function OverviewStats({ dataset = [], tasks = [], isRunning = false, headerActions = null }) {
   const count = Array.isArray(dataset) ? dataset.length : 0;
   const hasData = count > 0;
 
@@ -49,7 +49,7 @@ export default function OverviewStats({ dataset = [], tasks = [], isRunning = fa
     <div className="matte-card" style={{ display: "flex", flexDirection: "column", height: "100%", justifyContent: "space-between", gap: "1rem" }}>
       {/* Header */}
       <div>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.4rem", gap: "0.5rem", flexWrap: "wrap" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
             <div style={{
               width: "30px",
@@ -71,56 +71,59 @@ export default function OverviewStats({ dataset = [], tasks = [], isRunning = fa
             </div>
           </div>
 
-          {/* Dynamic Status Badge */}
-          {isRunning ? (
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              fontSize: "0.7rem",
-              color: "#38bdf8",
-              fontFamily: "var(--font-mono, monospace)",
-              background: "rgba(56, 189, 248, 0.12)",
-              border: "1px solid rgba(56, 189, 248, 0.25)",
-              padding: "0.15rem 0.45rem",
-              borderRadius: "4px"
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#38bdf8", animation: "pulse 1.5s infinite" }} />
-              STREAMING
-            </span>
-          ) : hasData ? (
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              fontSize: "0.7rem",
-              color: "var(--accent-primary, #5DD62C)",
-              fontFamily: "var(--font-mono, monospace)",
-              background: "rgba(93, 214, 44, 0.08)",
-              border: "1px solid rgba(93, 214, 44, 0.2)",
-              padding: "0.15rem 0.45rem",
-              borderRadius: "4px"
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#5DD62C" }} />
-              READY
-            </span>
-          ) : (
-            <span style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.35rem",
-              fontSize: "0.7rem",
-              color: "#94a3b8",
-              fontFamily: "var(--font-mono, monospace)",
-              background: "rgba(148, 163, 184, 0.08)",
-              border: "1px solid rgba(148, 163, 184, 0.15)",
-              padding: "0.15rem 0.45rem",
-              borderRadius: "4px"
-            }}>
-              <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#64748b" }} />
-              STANDBY
-            </span>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+            {headerActions}
+            {/* Dynamic Status Badge */}
+            {isRunning ? (
+              <span style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.7rem",
+                color: "#38bdf8",
+                fontFamily: "var(--font-mono, monospace)",
+                background: "rgba(56, 189, 248, 0.12)",
+                border: "1px solid rgba(56, 189, 248, 0.25)",
+                padding: "0.15rem 0.45rem",
+                borderRadius: "4px"
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#38bdf8", animation: "pulse 1.5s infinite" }} />
+                STREAMING
+              </span>
+            ) : hasData ? (
+              <span style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.7rem",
+                color: "var(--accent-primary, #5DD62C)",
+                fontFamily: "var(--font-mono, monospace)",
+                background: "rgba(93, 214, 44, 0.08)",
+                border: "1px solid rgba(93, 214, 44, 0.2)",
+                padding: "0.15rem 0.45rem",
+                borderRadius: "4px"
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#5DD62C" }} />
+                READY
+              </span>
+            ) : (
+              <span style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.7rem",
+                color: "#94a3b8",
+                fontFamily: "var(--font-mono, monospace)",
+                background: "rgba(148, 163, 184, 0.08)",
+                border: "1px solid rgba(148, 163, 184, 0.15)",
+                padding: "0.15rem 0.45rem",
+                borderRadius: "4px"
+              }}>
+                <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#64748b" }} />
+                STANDBY
+              </span>
+            )}
+          </div>
         </div>
 
         <p style={{ margin: "0 0 0.85rem 0", fontSize: "0.78rem", color: "var(--text-muted)" }}>
