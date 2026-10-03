@@ -15,9 +15,10 @@ import AIChatPanel from "./components/AIChatPanel";
 import DataLineageFlow from "./components/DataLineageFlow";
 import ResearchReportModal from "./components/ResearchReportModal";
 import { useAuth } from "./context/AuthContext";
-import { getBackendDatasets, getBackendTasks, getDatasetRecords, launchBackendTask, confirmSchema, cancelBackendTask } from "./services/api";
+import { getBackendDatasets, getBackendTasks, getDatasetRecords, launchBackendTask, confirmSchema, cancelBackendTask, deleteBackendDataset } from "./services/api";
 import { calculateFreshness } from "./utils/freshness";
 import confetti from "canvas-confetti";
+import { Trash2 } from "lucide-react";
 
 export default function App() {
   const { user, isAuthenticated } = useAuth();
@@ -35,7 +36,7 @@ export default function App() {
   const [allDatasets, setAllDatasets] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [logs, setLogs] = useState([]);
-  const [currentStep, setCurrentStep] = useState(1);
+  const [currentStep, setCurrentStep] = useState(0);
   const [isRunning, setIsRunning] = useState(false);
   const [currentTaskId, setCurrentTaskId] = useState(null);
   const [inspectingRecord, setInspectingRecord] = useState(null);
@@ -299,6 +300,43 @@ export default function App() {
     setActiveTab("datasets");
   };
 
+  const handleDeleteDataset = async (datasetId) => {
+    if (!datasetId) return;
+    try {
+      await deleteBackendDataset(datasetId);
+
+      // Remove from allDatasets in memory
+      setAllDatasets((prev) => prev.filter((d) => String(d._id) !== String(datasetId) && String(d.id) !== String(datasetId)));
+
+      // If active dataset is the one deleted, clear it
+      if (String(currentDatasetId) === String(datasetId)) {
+        setCurrentDatasetId(null);
+        setCurrentDatasetTitle("");
+        setDataset([]);
+        setLineageData(null);
+        setCurrentStep(0);
+      }
+
+      setLogs((prev) => [
+        ...prev,
+        {
+          time: new Date().toTimeString().split(" ")[0],
+          agent: "System",
+          type: "info",
+          msg: `Dataset deleted successfully from database.`,
+        },
+      ]);
+
+      // If currently on the deleted dataset view, redirect back to datasets catalog
+      if (location.pathname.startsWith(`/datasets/${datasetId}`)) {
+        navigate("/datasets");
+      }
+    } catch (err) {
+      console.error("Failed to delete dataset:", err);
+      alert(`Could not delete dataset: ${err.message}`);
+    }
+  };
+
 
   return (
     <div className="app-container matte-bg" style={{ minHeight: "100vh", display: "flex", color: "#e5e5e5" }}>
@@ -306,7 +344,7 @@ export default function App() {
       <Sidebar
         activeTab={activeTab}
         setActiveTab={setActiveTab}
-        datasetCount={dataset.length}
+        datasetCount={allDatasets.length}
         taskCount={tasks.length}
         isBackendConnected={isBackendConnected}
         onGoToLanding={() => setCurrentView("landing")}
@@ -359,6 +397,7 @@ export default function App() {
                   onExportClick={handleOpenExport}
                   onChatClick={handleOpenAIChat}
                   onReportClick={handleOpenReport}
+                  onDeleteClick={handleDeleteDataset}
                 />
               </div>
               </>
@@ -453,35 +492,62 @@ export default function App() {
                     <div 
                       key={ds._id} 
                       className="matte-card" 
-                      style={{ cursor: "pointer", transition: "all 0.2s" }}
+                      style={{ cursor: "pointer", transition: "all 0.2s", display: "flex", flexDirection: "column", justifyContent: "space-between" }}
                       onClick={() => {
                         handleSelectDataset(ds);
                         navigate(`/datasets/${ds._id}`);
                       }}
                     >
-                      <h3 style={{ fontSize: "1rem", color: "#fff", fontWeight: "600", marginBottom: "0.5rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {ds.title || ds.prompt || "Untitled Dataset"}
-                      </h3>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#888", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
-                        <span>{new Date(ds.createdAt).toLocaleDateString()}</span>
-                        {(() => {
-                          const fresh = calculateFreshness(ds.createdAt);
-                          return (
-                            <span style={{
-                              fontFamily: "var(--font-mono, monospace)",
-                              fontSize: "0.7rem",
-                              letterSpacing: "0.04em",
-                              padding: "0.15rem 0.45rem",
-                              borderRadius: "4px",
-                              background: fresh.badgeColor,
-                              color: fresh.textColor,
-                              border: `1px solid ${fresh.isStale ? "rgba(245, 158, 11, 0.3)" : "rgba(255, 255, 255, 0.08)"}`
-                            }}>
-                              ● {fresh.label}
-                            </span>
-                          );
-                        })()}
-                        <span style={{ color: "var(--emerald-primary)", fontWeight: "600" }}>{ds.records?.length || 0} Records</span>
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
+                          <h3 style={{ fontSize: "1rem", color: "#fff", fontWeight: "600", margin: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", flex: 1 }}>
+                            {ds.title || ds.prompt || "Untitled Dataset"}
+                          </h3>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (window.confirm(`Are you sure you want to permanently delete "${ds.title || ds.prompt || "this dataset"}" from the database?`)) {
+                                handleDeleteDataset(ds._id);
+                              }
+                            }}
+                            title="Delete dataset permanently from database"
+                            style={{
+                              background: "rgba(239, 68, 68, 0.1)",
+                              border: "1px solid rgba(239, 68, 68, 0.25)",
+                              borderRadius: "6px",
+                              color: "#ef4444",
+                              padding: "0.35rem 0.5rem",
+                              cursor: "pointer",
+                              display: "inline-flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              transition: "all 0.15s ease"
+                            }}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", color: "#888", fontSize: "0.8rem", marginBottom: "0.75rem" }}>
+                          <span>{new Date(ds.createdAt).toLocaleDateString()}</span>
+                          {(() => {
+                            const fresh = calculateFreshness(ds.createdAt);
+                            return (
+                              <span style={{
+                                fontFamily: "var(--font-mono, monospace)",
+                                fontSize: "0.7rem",
+                                letterSpacing: "0.04em",
+                                padding: "0.15rem 0.45rem",
+                                borderRadius: "4px",
+                                background: fresh.badgeColor,
+                                color: fresh.textColor,
+                                border: `1px solid ${fresh.isStale ? "rgba(245, 158, 11, 0.3)" : "rgba(255, 255, 255, 0.08)"}`
+                              }}>
+                                ● {fresh.label}
+                              </span>
+                            );
+                          })()}
+                          <span style={{ color: "var(--emerald-primary)", fontWeight: "600" }}>{ds.records?.length || 0} Records</span>
+                        </div>
                       </div>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
                         <button 
@@ -516,6 +582,7 @@ export default function App() {
                 onExportClick={handleOpenExport}
                 onChatClick={handleOpenAIChat}
                 onReportClick={handleOpenReport}
+                onDeleteDataset={handleDeleteDataset}
               />
             } />
 
@@ -589,7 +656,8 @@ function DatasetViewerRoute({
   onInspectSource,
   onExportClick,
   onChatClick,
-  onReportClick
+  onReportClick,
+  onDeleteDataset,
 }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -628,6 +696,7 @@ function DatasetViewerRoute({
         onExportClick={(meta) => onExportClick({ id, title: activeMeta?.title, ...meta })}
         onChatClick={(meta) => onChatClick({ id, title: activeMeta?.title, ...meta })}
         onReportClick={(meta) => onReportClick({ id, title: activeMeta?.title, ...meta })}
+        onDeleteClick={onDeleteDataset}
       />
     </div>
   );
